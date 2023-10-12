@@ -13,7 +13,7 @@ try:
     with SSHTunnelForwarder(('starbug.cs.rit.edu', 22),
                             ssh_username=username,
                             ssh_password=password,
-                            remote_bind_address=('localhost', 5432)) as server:
+                            remote_bind_address=('127.0.0.1', 5432)) as server:
         server.start()
         print("SSH tunnel established")
         params = {
