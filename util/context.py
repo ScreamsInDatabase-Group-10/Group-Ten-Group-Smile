@@ -44,6 +44,7 @@ class ApplicationContext:
         self.orm: ORM = ORM(self.db)
         self.orm.register("books", BookRecord)
         self.orm.register("users", UserRecord)
+        self.logged_in: Optional[UserRecord] = None
 
     # Parse options from environment variables
     def parse_options(self) -> ContextOptions:
@@ -102,3 +103,15 @@ class ApplicationContext:
         self.db.close()
         if self.tunnel:
             self.tunnel.stop()
+
+    def login(self, email: str, password: str) -> bool:
+        email_result = self.orm.get_records_by_query_suffix("users", "WHERE email = %(email)s AND password = %(password)s", {"email": email, "password": password})
+        if len(email_result) == 0:
+            self.logged_in = email_result[0]
+            return True
+        else:
+            self.logged_in = None
+            return False
+    
+    def logout(self):
+        self.logged_in = None

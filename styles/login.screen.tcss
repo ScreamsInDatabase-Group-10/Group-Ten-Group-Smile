@@ -1,0 +1,33 @@
+LoginScreen {
+    align: center middle;
+}
+
+#login-panel {
+    height: 75%;
+    width: 25%;
+    margin: 4 8;
+    background: $panel;
+    color: $text;
+    border: tall $background;
+    padding: 1 2;
+    align: center top;
+}
+
+#login-title {
+    text-align: center;
+    padding: 1 1;
+}
+
+LoginScreen Input {
+    margin: 1 1;
+}
+
+#login-buttons {
+    width: 100%;
+    margin: 1 2;
+}
+
+#login-buttons Button {
+    width: 50%;
+    margin: 0 1;
+}

@@ -28,9 +28,6 @@ class UserRecord(Record):
         self.name_last = name_last
         self.email = email
         self.password = password
-
-    def check_login(self, password: str) -> bool:
-        return self.password == password
     
     @classmethod
     def create(cls, orm: ORM, name_first: str, name_last: str, email: str, password: str) -> Union["UserRecord", None]:
