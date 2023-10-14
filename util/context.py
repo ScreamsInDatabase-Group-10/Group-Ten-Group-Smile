@@ -97,4 +97,3 @@ class ApplicationContext:
         self.db.close()
         if self.tunnel:
             self.tunnel.stop()
-
