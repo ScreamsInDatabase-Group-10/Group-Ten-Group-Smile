@@ -6,9 +6,10 @@ class BooksApp(App):
     def __init__(self, context: ApplicationContext, driver_class = None, css_path = None, watch_css = False):
         super().__init__(driver_class, css_path, watch_css)
         self.context = context
+        self.title = "Books Viewer"
 
     def compose(self) -> ComposeResult:
-        yield Header(name="Books Viewer")
+        yield Header()
         yield Footer()
 
 if __name__ == "__main__":

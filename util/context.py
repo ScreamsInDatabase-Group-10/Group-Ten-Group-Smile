@@ -1,9 +1,11 @@
 from dataclasses import dataclass
 from dotenv import load_dotenv
-from psycopg import Connection, connect, cursor
+from psycopg import Connection, connect
 from sshtunnel import SSHTunnelForwarder
 from os import getenv, environ
 from typing import Optional
+from .orm import ORM
+from app_types import *
 
 load_dotenv()
 
@@ -39,6 +41,8 @@ class ApplicationContext:
     def __init__(self) -> None:
         self.options: ContextOptions = self.parse_options()
         self.db, self.tunnel = self.open_database()
+        self.orm: ORM = ORM(self.db)
+        self.orm.register("books", BookRecord)
 
     # Parse options from environment variables
     def parse_options(self) -> ContextOptions:

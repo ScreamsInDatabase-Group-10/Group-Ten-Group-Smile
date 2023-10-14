@@ -21,8 +21,15 @@ table_mapping: dict[TABLE_NAMES, str] = {
 }
 
 class Record:
-    def __init__(self, db: Connection, *args) -> None:
+    def __init__(self, db: Connection, table: str, *args) -> None:
         self.db = db
+        self.table = table
+
+    def save(self):
+        raise NotImplementedError
+    
+    def delete(self):
+        raise NotImplementedError
 
 class ORM:
     def __init__(self, connection: Connection) -> None:
@@ -59,11 +66,11 @@ class ORM:
         if not table in self.factories.keys():
             raise ORMRegistryError(table)
         
-        result_cursor = self.db.execute("SELECT * FROM %(table)s WHERE id = %(id)s;", {"table": table, "id": id})
+        result_cursor = self.db.execute("SELECT * FROM " + table + " WHERE id = %(id)s;", {"id": id})
         result = result_cursor.fetchone()
         result_cursor.close()
         if result:
-            return self.factories[table](self.db, *result)
+            return self.factories[table](self.db, table_mapping[table], *result)
         else:
             return None
         
@@ -84,11 +91,11 @@ class ORM:
         if not table in self.factories.keys():
             raise ORMRegistryError(table)
         
-        result_cursor = self.db.execute("SELECT * FROM %(table)s WHERE %(condition)s;", {"table": table, "condition": condition})
+        result_cursor = self.db.execute("SELECT * FROM " + table + " WHERE %(condition)s;", {"condition": condition})
         if limit:
-            result = [self.factories[table](self.db, *i) for i in result_cursor.fetchmany(size=limit)]
+            result = [self.factories[table](self.db, table_mapping[table], *i) for i in result_cursor.fetchmany(size=limit)]
         else:
-            result = [self.factories[table](self.db, *i) for i in result_cursor.fetchall()]
+            result = [self.factories[table](self.db, table_mapping[table], *i) for i in result_cursor.fetchall()]
         
         result_cursor.close()
         return result
@@ -110,7 +117,7 @@ class ORM:
         if not table in self.factories.keys():
             raise ORMRegistryError(table)
         
-        result_cursor = self.db.execute("SELECT * FROM %(table)s " + query_suffix, dict(table=table, **params))
-        results = [self.factories[table](self.db, *i) for i in result_cursor.fetchall()]
+        result_cursor = self.db.execute(f"SELECT * FROM {table} " + query_suffix, params)
+        results = [self.factories[table](self.db, table_mapping[table], *i) for i in result_cursor.fetchall()]
         result_cursor.close()
         return results
