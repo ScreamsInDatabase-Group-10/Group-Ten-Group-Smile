@@ -1,4 +1,4 @@
-from psycopg import Connection
+from psycopg import Connection, Cursor
 from typing import Literal, Optional
 from .exceptions import *
 
@@ -13,23 +13,26 @@ TABLE_NAMES = Literal[
 
 table_mapping: dict[TABLE_NAMES, str] = {
     "books": "books",
-    "contributors" : "contributors",
+    "contributors": "contributors",
     "genres": "genres",
     "audiences": "audiences",
     "users": "users",
-    "collections": "collections"
+    "collections": "collections",
 }
 
+
 class Record:
-    def __init__(self, db: Connection, table: str, *args) -> None:
+    def __init__(self, db: Connection, table: str, orm: "ORM", *args) -> None:
         self.db = db
         self.table = table
+        self.orm = orm
 
     def save(self):
         raise NotImplementedError
-    
+
     def delete(self):
         raise NotImplementedError
+
 
 class ORM:
     def __init__(self, connection: Connection) -> None:
@@ -65,16 +68,20 @@ class ORM:
         """
         if not table in self.factories.keys():
             raise ORMRegistryError(table)
-        
-        result_cursor = self.db.execute("SELECT * FROM " + table + " WHERE id = %(id)s;", {"id": id})
+
+        result_cursor = self.db.execute(
+            "SELECT * FROM " + table + " WHERE id = %(id)s;", {"id": id}
+        )
         result = result_cursor.fetchone()
         result_cursor.close()
         if result:
-            return self.factories[table](self.db, table_mapping[table], *result)
+            return self.factories[table](self.db, table_mapping[table], self, *result)
         else:
             return None
-        
-    def get_records_by_condition(self, table: TABLE_NAMES, condition: str, limit: int = None) -> list[Record]:
+
+    def get_records_by_condition(
+        self, table: TABLE_NAMES, condition: str, limit: int = None
+    ) -> list[Record]:
         """Get results by a condition (Text after a WHERE statement)
 
         Args:
@@ -90,17 +97,27 @@ class ORM:
         """
         if not table in self.factories.keys():
             raise ORMRegistryError(table)
-        
-        result_cursor = self.db.execute("SELECT * FROM " + table + " WHERE %(condition)s;", {"condition": condition})
+
+        result_cursor = self.db.execute(
+            "SELECT * FROM " + table + " WHERE %(condition)s;", {"condition": condition}
+        )
         if limit:
-            result = [self.factories[table](self.db, table_mapping[table], *i) for i in result_cursor.fetchmany(size=limit)]
+            result = [
+                self.factories[table](self.db, table_mapping[table], self, *i)
+                for i in result_cursor.fetchmany(size=limit)
+            ]
         else:
-            result = [self.factories[table](self.db, table_mapping[table], *i) for i in result_cursor.fetchall()]
-        
+            result = [
+                self.factories[table](self.db, table_mapping[table], self, *i)
+                for i in result_cursor.fetchall()
+            ]
+
         result_cursor.close()
         return result
-    
-    def get_records_by_query_suffix(self, table: TABLE_NAMES, query_suffix: str, params = {}) -> list[Record]:
+
+    def get_records_by_query_suffix(
+        self, table: TABLE_NAMES, query_suffix: str, params={}
+    ) -> list[Record]:
         """Get results through a query
 
         Args:
@@ -116,8 +133,22 @@ class ORM:
         """
         if not table in self.factories.keys():
             raise ORMRegistryError(table)
-        
-        result_cursor = self.db.execute(f"SELECT * FROM {table} " + query_suffix, params)
-        results = [self.factories[table](self.db, table_mapping[table], *i) for i in result_cursor.fetchall()]
+
+        result_cursor = self.db.execute(
+            f"SELECT * FROM {table} " + query_suffix, params
+        )
+        results = [
+            self.factories[table](self.db, table_mapping[table], self, *i)
+            for i in result_cursor.fetchall()
+        ]
         result_cursor.close()
         return results
+    
+    def get_records_from_cursor(self, table: TABLE_NAMES, cursor: Cursor) -> list[Record]:
+        return [
+            self.factories[table](self.db, table_mapping[table], self, *i)
+            for i in cursor.fetchall()
+        ]
+
+    def next_available_id(self, table: TABLE_NAMES) -> int:
+        return self.db.execute("SELECT MAX(id) FROM " + table).fetchone()[0] + 1

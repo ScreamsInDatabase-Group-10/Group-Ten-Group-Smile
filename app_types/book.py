@@ -1,5 +1,5 @@
 from psycopg import Connection
-from util.orm import Record
+from util.orm import Record, ORM
 from datetime import datetime
 
 
@@ -8,6 +8,7 @@ class BookRecord(Record):
         self,
         db: Connection,
         table: str,
+        orm: ORM,
         id: int,
         title: str,
         length: int,
@@ -15,7 +16,7 @@ class BookRecord(Record):
         release_dt: datetime,
         isbn: int,
     ) -> None:
-        super().__init__(db, table)
+        super().__init__(db, table, orm)
         self.id = id
         self.title = title
         self.length = length

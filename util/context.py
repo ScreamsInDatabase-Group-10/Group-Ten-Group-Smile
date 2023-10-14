@@ -43,6 +43,7 @@ class ApplicationContext:
         self.db, self.tunnel = self.open_database()
         self.orm: ORM = ORM(self.db)
         self.orm.register("books", BookRecord)
+        self.orm.register("users", UserRecord)
 
     # Parse options from environment variables
     def parse_options(self) -> ContextOptions:
