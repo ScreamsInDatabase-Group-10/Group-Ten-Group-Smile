@@ -106,7 +106,7 @@ class ApplicationContext:
 
     def login(self, email: str, password: str) -> bool:
         email_result = self.orm.get_records_by_query_suffix("users", "WHERE email = %(email)s AND password = %(password)s", {"email": email, "password": password})
-        if len(email_result) == 0:
+        if len(email_result) != 0:
             self.logged_in = email_result[0]
             return True
         else:

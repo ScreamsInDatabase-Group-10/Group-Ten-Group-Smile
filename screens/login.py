@@ -3,6 +3,7 @@ from textual.app import ComposeResult
 from textual.widgets import Input, Header, Footer, Static, Button, Input
 from textual.containers import Container, Horizontal
 from textual.reactive import reactive
+from textual.message import Message
 from util import ContextScreen
 import os
 
@@ -17,6 +18,20 @@ class LoginScreen(ContextScreen):
     CSS_PATH = os.path.join("..", "styles", "login.screen.tcss")
     login_valid = reactive(False)
     ca_valid = reactive(False)
+
+    class LoginAttempted(Message):
+        def __init__(self, valid: bool, email: str) -> None:
+            self.valid = valid
+            self.email = email
+            super().__init__()
+
+    class AccountCreated(Message):
+        def __init__(self, email: str, password: str, first_name: str, last_name: str) -> None:
+            self.email = email
+            self.password = password
+            self.first_name = first_name
+            self.last_name = last_name
+            super().__init__()
 
     def __init__(self, name=None, id=None, classes=None) -> None:
         super().__init__(name, id, classes)
@@ -76,7 +91,10 @@ class LoginScreen(ContextScreen):
     def on_button_pressed(self, event: Button.Pressed):
         match event.button.id:
             case "login-btn-login":
-                self.log.debug(self.inputs)
+                self.query_one("#login-btn-login").set_loading(True)
+                result = self.context.login(self.inputs["email"], self.inputs["password"])
+                self.post_message(self.LoginAttempted(result, self.inputs["email"]))
+                self.query_one("#login-btn-login").set_loading(False)
             case "login-btn-create-account":
                 widget = self.query_one("#create-account-container")
                 if "hidden" in widget.classes:
@@ -86,8 +104,9 @@ class LoginScreen(ContextScreen):
                     self.query_one("#login-btn-back").remove_class("hidden")
                     self.creating_account = True
                     self.ca_valid = False
+                    self.focus()
                 else:
-                    self.log.debug(self.inputs)
+                    self.post_message(self.AccountCreated(*list(self.inputs.values())))
             case "login-btn-back":
                 self.ca_valid = True
                 self.creating_account = False
@@ -99,5 +118,4 @@ class LoginScreen(ContextScreen):
                 self.query_one("#login-btn-login").remove_class("hidden")
                 self.query_one("#login-panel").remove_class("expanded")
                 self.query_one("#login-btn-back").add_class("hidden")
-                for i in self.query("#login-buttons Button"):
-                    i.blur()
+                self.focus()
