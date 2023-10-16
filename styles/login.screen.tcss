@@ -33,8 +33,8 @@ LoginScreen Input {
 }
 
 #login-buttons {
-    width: 100%;
-    margin: 1 2;
+    width: 91;
+    margin: 1 1;
 }
 
 #login-buttons Button {
@@ -43,7 +43,8 @@ LoginScreen Input {
 }
 
 #login-btn-create-account.expanded {
-    width: 100%;
+    width: 91;
+    margin: 0 1;
 }
 
 .hidden {
