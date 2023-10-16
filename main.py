@@ -3,6 +3,7 @@ from textual.app import App, ComposeResult
 from textual.widgets import Header, Footer
 from screens.login import LoginScreen
 from screens.home import HomeScreen
+from app_types import UserRecord
 
 class BooksApp(App):
     CSS_PATH = ["./styles/login.screen.tcss", "./styles/app.tcss"]
@@ -30,7 +31,18 @@ class BooksApp(App):
             self.notify("Incorrect email/password", title="Failure", severity="error")
 
     def on_login_screen_account_created(self, event: LoginScreen.AccountCreated):
-        self.log.debug(event.email, event.password, event.first_name, event.last_name)
+        try:
+            new_user = UserRecord.create(self.context.orm, event.first_name, event.last_name, event.email, event.password)
+        except:
+            self.notify("Failed to create user (DB Error)", title="Failure", severity="error")
+            return
+
+        if self.context.login(event.email, event.password):
+            self.notify("Created new account with email " + event.email, title="Success", severity="information")
+            self.push_screen("home")
+        else:
+            self.notify("User created, but login failed.", title="Failure", severity="error")
+
 
 if __name__ == "__main__":
     context = ApplicationContext()
