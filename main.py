@@ -5,10 +5,11 @@ from screens.login import LoginScreen
 from screens.home import HomeScreen
 from app_types import UserRecord
 from events.logout import LogoutMessage
+import os
 
 
 class BooksApp(App):
-    CSS_PATH = ["./styles/login.screen.tcss", "./styles/app.tcss"]
+    CSS_PATH = [os.path.join("styles", "login.screen.tcss"), os.path.join("styles", "app.tcss")]
     ENABLE_COMMAND_PALETTE = False
 
     def __init__(
