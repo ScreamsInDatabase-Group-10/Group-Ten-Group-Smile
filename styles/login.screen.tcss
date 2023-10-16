@@ -3,14 +3,24 @@ LoginScreen {
 }
 
 #login-panel {
-    height: 75%;
-    width: 25%;
+    height: 20;
+    width: 100;
     margin: 4 8;
     background: $panel;
     color: $text;
     border: tall $background;
     padding: 1 2;
     align: center top;
+}
+
+#login-panel.expanded {
+    height: 28;
+}
+
+#create-account-container {
+    height: auto;
+    padding: -1 0;
+    width: 94;
 }
 
 #login-title {
@@ -30,4 +40,12 @@ LoginScreen Input {
 #login-buttons Button {
     width: 50%;
     margin: 0 1;
+}
+
+#login-btn-create-account.expanded {
+    width: 100%;
+}
+
+.hidden {
+    display: none;
 }
