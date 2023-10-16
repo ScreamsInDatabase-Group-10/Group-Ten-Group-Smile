@@ -3,5 +3,5 @@
 }
 
 TabPane {
-    height: 50;
+    height: 1fr;
 }
