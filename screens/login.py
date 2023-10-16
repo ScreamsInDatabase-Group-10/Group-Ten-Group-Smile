@@ -37,6 +37,7 @@ class LoginScreen(ContextScreen):
             ),
             Horizontal(
                 Button("[bold]Log In[/bold]", id="login-btn-login", variant="primary", disabled=True),
+                Button("[bold]Back[/bold]", id="login-btn-back", variant="default", classes="hidden"),
                 Button(
                     "[bold]Create Account[/bold]",
                     id="login-btn-create-account",
@@ -82,8 +83,21 @@ class LoginScreen(ContextScreen):
                     widget.remove_class("hidden")
                     self.query_one("#login-btn-login").add_class("hidden")
                     self.query_one("#login-panel").add_class("expanded")
-                    self.query_one("#login-btn-create-account").add_class("expanded")
+                    self.query_one("#login-btn-back").remove_class("hidden")
                     self.creating_account = True
                     self.ca_valid = False
                 else:
                     self.log.debug(self.inputs)
+            case "login-btn-back":
+                self.ca_valid = True
+                self.creating_account = False
+                self.inputs["first_name"] = ""
+                self.inputs["last_name"] = ""
+                self.query_one("#ca-first-name").value = ""
+                self.query_one("#ca-last-name").value = ""
+                self.query_one("#create-account-container").add_class("hidden")
+                self.query_one("#login-btn-login").remove_class("hidden")
+                self.query_one("#login-panel").remove_class("expanded")
+                self.query_one("#login-btn-back").add_class("hidden")
+                for i in self.query("#login-buttons Button"):
+                    i.blur()

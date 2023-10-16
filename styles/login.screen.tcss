@@ -42,11 +42,6 @@ LoginScreen Input {
     margin: 0 1;
 }
 
-#login-btn-create-account.expanded {
-    width: 91;
-    margin: 0 1;
-}
-
 .hidden {
     display: none;
 }
