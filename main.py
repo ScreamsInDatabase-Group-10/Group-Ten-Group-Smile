@@ -7,10 +7,15 @@ from app_types import UserRecord
 from events.logout import LogoutMessage
 import os
 
+
 # Main UI class
 class BooksApp(App):
     # CSS paths
-    CSS_PATH = [os.path.join("styles", "login.screen.tcss"), os.path.join("styles", "app.tcss")]
+    CSS_PATH = [
+        os.path.join("styles", "login.screen.tcss"),
+        os.path.join("styles", "app.tcss"),
+        os.path.join("styles", "home.screen.tcss"),
+    ]
 
     # Dont use the command palette
     ENABLE_COMMAND_PALETTE = False
@@ -89,7 +94,7 @@ class BooksApp(App):
                 "Failed to create user (DB Error)", title="Failure", severity="error"
             )
             return
-        
+
         try:
             if self.context.login(event.email, event.password):
                 self.notify(
