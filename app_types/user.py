@@ -50,6 +50,7 @@ class UserRecord(Record):
         self.db.execute("DELETE FROM " + self.table + " WHERE id = %s", (self.id,))
         self.db.commit()
     
+    # Create a user, handle ID generation and times automatically
     @classmethod
     def create(cls, orm: ORM, name_first: str, name_last: str, email: str, password: str) -> Union["UserRecord", None]:
         next_id = orm.next_available_id("users")

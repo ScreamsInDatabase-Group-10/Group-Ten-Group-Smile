@@ -7,24 +7,28 @@ from textual.message import Message
 from util import ContextScreen
 import os
 
-
+# Text
 class LoginTitle(Static):
     def on_mount(self):
         self.update("[bold]Log In / Create Account[/]")
 
 
-
+# Main login screen
 class LoginScreen(ContextScreen):
     CSS_PATH = os.path.join("..", "styles", "login.screen.tcss")
+
+    # Setup some reactive attrs
     login_valid = reactive(False)
     ca_valid = reactive(False)
 
+    # Login Attempt message
     class LoginAttempted(Message):
         def __init__(self, valid: bool, email: str) -> None:
             self.valid = valid
             self.email = email
             super().__init__()
 
+    # Account Creation message
     class AccountCreated(Message):
         def __init__(self, email: str, password: str, first_name: str, last_name: str) -> None:
             self.email = email
@@ -33,11 +37,13 @@ class LoginScreen(ContextScreen):
             self.last_name = last_name
             super().__init__()
 
+    # Initializes input values & state
     def __init__(self, name=None, id=None, classes=None) -> None:
         super().__init__(name, id, classes)
         self.inputs = {"email": "", "password": "", "first_name": "", "last_name": ""}
         self.creating_account = False
 
+    # Composes the initial UI state
     def compose(self) -> ComposeResult:
         yield Header()
         yield Container(
@@ -65,16 +71,20 @@ class LoginScreen(ContextScreen):
         )
         yield Footer()
 
+    # Watches login valid state
     def watch_login_valid(self, old: bool, new: bool):
         self.query_one("#login-btn-login").disabled = not new
     
+    # Watches create account valid state
     def watch_ca_valid(self, old: bool, new: bool):
         self.query_one("#login-btn-create-account").disabled = not new
 
+    # Listen for input changes and update vals accordingly
     def on_input_changed(self, event: Input.Changed):
         if event.input.name in self.inputs.keys():
             self.inputs[event.input.name] = event.input.value
         
+        # Update button disable vals
         if len(self.inputs["email"]) == 0 or len(self.inputs["password"]) == 0:
             self.login_valid = False
             self.ca_valid = False
@@ -88,6 +98,7 @@ class LoginScreen(ContextScreen):
             else:
                 self.ca_valid = True
 
+    # Listen for button presses, then do different things based on button ID
     def on_button_pressed(self, event: Button.Pressed):
         match event.button.id:
             case "login-btn-login":

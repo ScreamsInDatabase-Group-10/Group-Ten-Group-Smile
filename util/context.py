@@ -106,6 +106,7 @@ class ApplicationContext:
         if self.tunnel:
             self.tunnel.stop()
 
+    # Check login, then perform login tasks if correct
     def login(self, email: str, password: str) -> bool:
         email_result: list[UserRecord] = self.orm.get_records_by_query_suffix("users", "WHERE email = %(email)s AND password = %(password)s", {"email": email, "password": password})
         if len(email_result) != 0:
@@ -117,5 +118,6 @@ class ApplicationContext:
             self.logged_in = None
             return False
     
+    # Logs out, just a semantic helper
     def logout(self):
         self.logged_in = None

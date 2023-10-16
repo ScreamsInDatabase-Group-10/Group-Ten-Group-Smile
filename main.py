@@ -7,11 +7,15 @@ from app_types import UserRecord
 from events.logout import LogoutMessage
 import os
 
-
+# Main UI class
 class BooksApp(App):
+    # CSS paths
     CSS_PATH = [os.path.join("styles", "login.screen.tcss"), os.path.join("styles", "app.tcss")]
+
+    # Dont use the command palette
     ENABLE_COMMAND_PALETTE = False
 
+    # Setup
     def __init__(
         self,
         context: ApplicationContext,
@@ -23,10 +27,13 @@ class BooksApp(App):
         self.context = context
         self.title = "Books Viewer"
 
+    # Just here because Textual seems to like it
+    # Is never actually rendered
     def compose(self) -> ComposeResult:
         yield Header()
         yield Footer()
 
+    # Setup screens & check autologin
     def on_mount(self):
         self.install_screen(LoginScreen(), name="login")
         self.install_screen(HomeScreen(), name="home")
@@ -57,6 +64,7 @@ class BooksApp(App):
 
     # Application Event Handling
 
+    # Handle login attempt
     def on_login_screen_login_attempted(self, event: LoginScreen.LoginAttempted):
         if event.valid:
             self.notify(
@@ -66,6 +74,7 @@ class BooksApp(App):
         else:
             self.notify("Incorrect email/password", title="Failure", severity="error")
 
+    # Handle account creation
     def on_login_screen_account_created(self, event: LoginScreen.AccountCreated):
         try:
             new_user = UserRecord.create(
@@ -93,6 +102,7 @@ class BooksApp(App):
                 "User created, but login failed.", title="Failure", severity="error"
             )
 
+    # Handle logout
     def on_logout_message(self, event: LogoutMessage):
         self.context.logout()
         self.push_screen("login")

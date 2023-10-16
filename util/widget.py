@@ -4,6 +4,12 @@ from textual.screen import Screen
 from textual.widgets import Static
 from .context import ApplicationContext
 
+"""
+SUMMARY:
+Some base classes to inject ApplicationContext into widget classes
+Mostly just makes type inference easier, it would work without these.
+"""
+
 
 class ContextWidget(Widget):
     def __init__(

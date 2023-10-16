@@ -20,20 +20,29 @@ table_mapping: dict[TABLE_NAMES, str] = {
     "collections": "collections",
 }
 
-
+# Record class
 class Record:
     def __init__(self, db: Connection, table: str, orm: "ORM", *args) -> None:
+        """Initializer
+
+        Args:
+            db (Connection): DB Connection, handled by ORM
+            table (str): Table name
+            orm (ORM): ORM object
+        """
         self.db = db
         self.table = table
         self.orm = orm
 
+    # Implement in subclasses to save to database automatically
     def save(self):
         raise NotImplementedError
 
+    # Implement in subclass to delete from database automatically
     def delete(self):
         raise NotImplementedError
 
-
+# Extremely basic ORM, just abstracts away some common tasks into OOP
 class ORM:
     def __init__(self, connection: Connection) -> None:
         """Create ORM
@@ -145,10 +154,29 @@ class ORM:
         return results
     
     def get_records_from_cursor(self, table: TABLE_NAMES, cursor: Cursor) -> list[Record]:
+        """Gets an array of records from a cursor (potentially unsafe)
+
+        Args:
+            table (TABLE_NAMES): Table name
+            cursor (Cursor): Raw psycopg3 cursor
+
+        Returns:
+            list[Record]: List of returned records
+        """
         return [
             self.factories[table](self.db, table_mapping[table], self, *i)
             for i in cursor.fetchall()
         ]
 
     def next_available_id(self, table: TABLE_NAMES) -> int:
+        """Returns the next available ID in the table. 
+                This is not assumed to be safe for more than 1 client, 
+                we just aren't using serial IDs so this was a quick hack around it
+
+        Args:
+            table (TABLE_NAMES): Table name
+
+        Returns:
+            int: Next available ID.
+        """
         return self.db.execute("SELECT MAX(id) FROM " + table).fetchone()[0] + 1

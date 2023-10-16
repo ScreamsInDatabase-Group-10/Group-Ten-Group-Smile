@@ -44,6 +44,7 @@ class BookRecord(Record):
         self.db.execute("DELETE FROM " + self.table + " WHERE id = %s", (self.id,))
         self.db.commit()
 
+    # Return an {id:name} mapping of audiences
     @property
     def audiences(self) -> dict[int, str]:
         cursor = self.db.execute("SELECT * FROM audiences AS root WHERE id IN (SELECT audience_id FROM books_audiences WHERE book_id = %(id)s)", {"id": self.id})
@@ -51,6 +52,7 @@ class BookRecord(Record):
         cursor.close()
         return results
     
+    # Return an {id:name} mapping of genres
     @property
     def genres(self) -> dict[int, str]:
         cursor = self.db.execute("SELECT * FROM genres AS root WHERE id IN (SELECT genre_id FROM books_genres WHERE book_id = %(id)s)", {"id": self.id})
