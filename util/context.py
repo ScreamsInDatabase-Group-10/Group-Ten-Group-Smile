@@ -6,6 +6,8 @@ from os import getenv, environ
 from typing import Optional
 from .orm import ORM
 from app_types import *
+from datetime import datetime
+from time import time
 
 load_dotenv()
 
@@ -43,6 +45,8 @@ class ApplicationContext:
         self.db, self.tunnel = self.open_database()
         self.orm: ORM = ORM(self.db)
         self.orm.register("books", BookRecord)
+        self.orm.register("users", UserRecord)
+        self.logged_in: Optional[UserRecord] = None
 
     # Parse options from environment variables
     def parse_options(self) -> ContextOptions:
@@ -101,3 +105,17 @@ class ApplicationContext:
         self.db.close()
         if self.tunnel:
             self.tunnel.stop()
+
+    def login(self, email: str, password: str) -> bool:
+        email_result: list[UserRecord] = self.orm.get_records_by_query_suffix("users", "WHERE email = %(email)s AND password = %(password)s", {"email": email, "password": password})
+        if len(email_result) != 0:
+            self.logged_in = email_result[0]
+            email_result[0].access_dt = datetime.fromtimestamp(time()).isoformat()
+            email_result[0].save()
+            return True
+        else:
+            self.logged_in = None
+            return False
+    
+    def logout(self):
+        self.logged_in = None
