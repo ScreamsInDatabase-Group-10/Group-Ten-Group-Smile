@@ -89,18 +89,24 @@ class BooksApp(App):
                 "Failed to create user (DB Error)", title="Failure", severity="error"
             )
             return
-
-        if self.context.login(event.email, event.password):
+        
+        try:
+            if self.context.login(event.email, event.password):
+                self.notify(
+                    "Created new account with email " + event.email,
+                    title="Success",
+                    severity="information",
+                )
+                self.push_screen("home")
+            else:
+                self.notify(
+                    "User created, but login failed.", title="Failure", severity="error"
+                )
+        except:
             self.notify(
-                "Created new account with email " + event.email,
-                title="Success",
-                severity="information",
+                "Failed to create user (DB Error)", title="Failure", severity="error"
             )
-            self.push_screen("home")
-        else:
-            self.notify(
-                "User created, but login failed.", title="Failure", severity="error"
-            )
+            return
 
     # Handle logout
     def on_logout_message(self, event: LogoutMessage):
