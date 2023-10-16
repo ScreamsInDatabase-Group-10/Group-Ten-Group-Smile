@@ -1,9 +1,9 @@
 from textual.app import ComposeResult
-from textual.widgets import Header, Footer, Placeholder
-from textual.containers import Container
+from textual.widgets import Header, Footer, TabbedContent, TabPane
 from util import ContextScreen
 from textual.binding import Binding
 from events.logout import LogoutMessage
+from .panels import *
 
 class HomeScreen(ContextScreen):
     # Bind CTRL + L to logout
@@ -14,12 +14,14 @@ class HomeScreen(ContextScreen):
     # Basic layout for the time being
     def compose(self) -> ComposeResult:
         yield Header()
-        yield Container(
-            Placeholder(label="Tabs", id="app-layout-container-tabs"),
-            Placeholder(label="Main Content", id="app-layout-container-content"),
-            id="app-layout-main"
-        )
         yield Footer()
+        with TabbedContent():
+            with TabPane("Account"):
+                yield SelfPanel()
+            with TabPane("Books"):
+                yield BooksPanel()
+            with TabPane("Users"):
+                yield UsersPanel()
 
     # Listens for logout
     def action_logout(self):
