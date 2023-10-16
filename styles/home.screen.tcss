@@ -2,6 +2,6 @@
     height: 100%;
 }
 
-.panel-placeholder {
-    height: 30;
+TabPane {
+    height: 50;
 }
