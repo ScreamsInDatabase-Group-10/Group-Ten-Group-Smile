@@ -3,13 +3,14 @@ from dotenv import load_dotenv
 from psycopg import Connection, connect
 from sshtunnel import SSHTunnelForwarder
 from os import getenv, environ
-from typing import Optional
+from typing import Optional, Literal
 from .orm import ORM
 from app_types import *
 from datetime import datetime
 from time import time
 
 load_dotenv()
+
 
 # Database options from ENV
 @dataclass
@@ -26,17 +27,21 @@ class DatabaseOptions:
     tunnel_username: Optional[str]
     tunnel_password: Optional[str]
 
+
 # Database AutoLogin options from ENV
 @dataclass
 class DebugAutologin:
     email: str
     password: str
 
+
 # Main options class from ENV
 @dataclass
 class ContextOptions:
     database: DatabaseOptions
     debug_autologin: Optional[DebugAutologin]
+    debug_autotab: Optional[Literal["self", "books", "users"]]
+
 
 # Centralized application context class
 class ApplicationContext:
@@ -60,16 +65,23 @@ class ApplicationContext:
                 database=environ["DB_DATABASE"],
                 tunnelled=tunnelled,
                 tunnel_host=environ["DB_TUNNEL_ADDR"] if tunnelled else None,
-                tunnel_port=int(getenv("DB_TUNNEL_PORT", "5432")) if tunnelled else None,
+                tunnel_port=int(getenv("DB_TUNNEL_PORT", "5432"))
+                if tunnelled
+                else None,
                 tunnel_username=environ["DB_TUNNEL_USERNAME"] if tunnelled else None,
-                tunnel_password=environ["DB_TUNNEL_PASSWORD"] if tunnelled else None
+                tunnel_password=environ["DB_TUNNEL_PASSWORD"] if tunnelled else None,
             ),
             debug_autologin=DebugAutologin(
                 email=environ["DEBUG_AUTOLOGIN_EMAIL"],
-                password=environ["DEBUG_AUTOLOGIN_PASSWORD"]
-            ) if getenv("DEBUG_FLAG_AUTOLOGIN", "false") == "true" else None
+                password=environ["DEBUG_AUTOLOGIN_PASSWORD"],
+            )
+            if getenv("DEBUG_FLAG_AUTOLOGIN", "false") == "true"
+            else None,
+            debug_autotab=environ["DEBUG_AUTOTAB_NAME"]
+            if getenv("DEBUG_FLAG_AUTOTAB", "false") == "true"
+            else None,
         )
-    
+
     # Activate database from ENV options
     def open_database(self) -> tuple[Connection, Optional[SSHTunnelForwarder]]:
         if self.options.database.tunnelled:
@@ -77,7 +89,10 @@ class ApplicationContext:
                 (self.options.database.tunnel_host, self.options.database.tunnel_port),
                 ssh_username=self.options.database.tunnel_username,
                 ssh_password=self.options.database.tunnel_password,
-                remote_bind_address=(self.options.database.host, self.options.database.port)
+                remote_bind_address=(
+                    self.options.database.host,
+                    self.options.database.port,
+                ),
             )
             tunnel.start()
             connection = connect(
@@ -85,7 +100,7 @@ class ApplicationContext:
                 user=self.options.database.username,
                 password=self.options.database.password,
                 host=tunnel.local_bind_host,
-                port=tunnel.local_bind_port
+                port=tunnel.local_bind_port,
             )
             return connection, tunnel
 
@@ -95,10 +110,10 @@ class ApplicationContext:
                 user=self.options.database.username,
                 password=self.options.database.password,
                 host=self.options.database.host,
-                port=self.options.database.port
+                port=self.options.database.port,
             )
             return connection, None
-    
+
     # Cleanup database & SSH tunnel
     def cleanup(self):
         self.db.commit()
@@ -108,7 +123,11 @@ class ApplicationContext:
 
     # Check login, then perform login tasks if correct
     def login(self, email: str, password: str) -> bool:
-        email_result: list[UserRecord] = self.orm.get_records_by_query_suffix("users", "WHERE email = %(email)s AND password = %(password)s", {"email": email, "password": password})
+        email_result: list[UserRecord] = self.orm.get_records_by_query_suffix(
+            "users",
+            "WHERE email = %(email)s AND password = %(password)s",
+            {"email": email, "password": password},
+        )
         if len(email_result) != 0:
             self.logged_in = email_result[0]
             email_result[0].access_dt = datetime.fromtimestamp(time()).isoformat()
@@ -117,7 +136,7 @@ class ApplicationContext:
         else:
             self.logged_in = None
             return False
-    
+
     # Logs out, just a semantic helper
     def logout(self):
         self.logged_in = None
