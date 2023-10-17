@@ -1,0 +1,7 @@
+#home-tabs {
+    height: 100%;
+}
+
+TabPane {
+    height: 1fr;
+}

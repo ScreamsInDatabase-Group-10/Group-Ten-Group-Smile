@@ -1,3 +1,7 @@
 Toast {
     margin: 1 1;
 }
+
+HeaderIcon {
+    opacity: 0;
+}

@@ -45,4 +45,7 @@ DB_TUNNEL_PASSWORD = <password> # SSH tunnel password
 DEBUG_FLAG_AUTOLOGIN = true # Automatically log in as a user
 DEBUG_AUTOLOGIN_EMAIL = chesley_lesly@gmail.com
 DEBUG_AUTOLOGIN_PASSWORD = tag-o$t-kager$
+
+DEBUG_FLAG_AUTOTAB = true # Switch to panel tab upon login
+DEBUG_AUTOTAB_NAME = books
 ```

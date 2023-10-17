@@ -5,12 +5,21 @@ from screens.login import LoginScreen
 from screens.home import HomeScreen
 from app_types import UserRecord
 from events.logout import LogoutMessage
+from events.login import LoginMessage
 import os
+
 
 # Main UI class
 class BooksApp(App):
     # CSS paths
-    CSS_PATH = [os.path.join("styles", "login.screen.tcss"), os.path.join("styles", "app.tcss")]
+    CSS_PATH = [
+        os.path.join("styles", "login.screen.tcss"),
+        os.path.join("styles", "app.tcss"),
+        os.path.join("styles", "home.screen.tcss"),
+        os.path.join("styles", "self.panel.tcss"),
+        os.path.join("styles", "books.panel.tcss"),
+        os.path.join("styles", "users.panel.tcss"),
+    ]
 
     # Dont use the command palette
     ENABLE_COMMAND_PALETTE = False
@@ -49,6 +58,7 @@ class BooksApp(App):
                     severity="information",
                 )
                 self.push_screen("home")
+                self.post_message(LoginMessage(self.context.logged_in))
             else:
                 self.notify(
                     "Debug option failure: Autologin with {email} : {password}".format(
@@ -71,6 +81,7 @@ class BooksApp(App):
                 "Logged in as " + event.email, title="Success", severity="information"
             )
             self.push_screen("home")
+            self.post_message(LoginMessage(self.context.logged_in))
         else:
             self.notify("Incorrect email/password", title="Failure", severity="error")
 
@@ -89,7 +100,7 @@ class BooksApp(App):
                 "Failed to create user (DB Error)", title="Failure", severity="error"
             )
             return
-        
+
         try:
             if self.context.login(event.email, event.password):
                 self.notify(
@@ -98,6 +109,7 @@ class BooksApp(App):
                     severity="information",
                 )
                 self.push_screen("home")
+                self.post_message(LoginMessage(self.context.logged_in))
             else:
                 self.notify(
                     "User created, but login failed.", title="Failure", severity="error"
@@ -112,6 +124,10 @@ class BooksApp(App):
     def on_logout_message(self, event: LogoutMessage):
         self.context.logout()
         self.push_screen("login")
+
+    def on_login_message(self, event: LoginMessage):
+        home_screen: HomeScreen = self.get_screen("home")
+        home_screen.handle_login(event)
 
 
 if __name__ == "__main__":
