@@ -7,7 +7,8 @@ from util import ContextWidget
 class BooksPanel(ContextWidget):
     def compose(self) -> ComposeResult:
         yield Container(
-            Placeholder("Books Panel"),
+            Placeholder("Search Bar", id="book-search-section", classes="panel-sections book-search"),
+            Placeholder("Book Results", id="book-results-section", classes="panel-sections book-results"),
             classes="panel books",
             id="app-panel-books",
         )
