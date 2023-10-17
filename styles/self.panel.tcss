@@ -1,0 +1,17 @@
+#app-panel-self {
+    layout: grid;
+    grid-size: 2 5;
+    grid-gutter: 1 2;
+}
+
+#user-info-section {
+    column-span: 4;
+}
+
+#collections-section {
+    row-span: 4;
+}
+
+#connections-section {
+    row-span: 4;
+}
