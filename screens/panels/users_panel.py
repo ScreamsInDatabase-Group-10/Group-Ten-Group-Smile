@@ -1,11 +1,13 @@
 from textual.app import ComposeResult
-from textual.widgets import Placeholder, Label
+from textual.widgets import Placeholder
 from textual.containers import Container
 from util import ContextWidget
-from textual.widget import Widget
 
 
-class UsersPanel(Widget):
+class UsersPanel(ContextWidget):
     def compose(self) -> ComposeResult:
-        yield Placeholder("Users Panel", classes="panel-placeholder")
-        yield Label("")
+        yield Container(
+            Placeholder("Users Panel"),
+            classes="panel users",
+            id="app-panel-users",
+        )
