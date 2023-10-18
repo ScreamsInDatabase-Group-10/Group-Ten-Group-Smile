@@ -182,11 +182,19 @@ class BookRecord(Record):
         released_after: Optional[datetime] = None,
         released_before: Optional[datetime] = None,
         isbn: Optional[int] = None,
+        author_name: Optional[str] = None,
+        genre: Optional[str] = None,
+        audience: Optional[str] = None,
         pagination: Optional[PaginationParams] = {},
     ) -> SearchResult:
         fields = []
         if title != None:
-            fields.append(SearchCondition("title ilike %s", ["%%" + title + "%%"]))
+            fields.append(
+                SearchCondition(
+                    "title ilike %s OR title ilike %s",
+                    ["%%" + title + "%%", "%%" + "%%".join(list(title)) + "%%"],
+                )
+            )
         if min_length != None:
             fields.append(SearchCondition("length >= %s", [min_length]))
         if max_length != None:
@@ -199,6 +207,32 @@ class BookRecord(Record):
             fields.append(SearchCondition("release_dt <= %s", [released_before]))
         if isbn != None:
             fields.append(SearchCondition("isbn = %s", [isbn]))
+        if author_name != None:
+            fields.append(
+                SearchCondition(
+                    "id IN (SELECT book_id FROM books_authors AS aus WHERE contributor_id IN (SELECT id FROM contributors WHERE name_last_company ilike %s OR name_first ilike %s OR name_first || ' ' || name_last_company ilike %s))",
+                    [
+                        "%%" + author_name + "%%",
+                        "%%" + author_name + "%%",
+                        "%%" + author_name + "%%",
+                    ],
+                )
+            )
+        if genre != None:
+            fields.append(
+                SearchCondition(
+                    "id IN (SELECT book_id FROM books_genres AS ges WHERE genre_id IN (SELECT id FROM genres WHERE name ilike %s))",
+                    ["%%" + genre + "%%"],
+                )
+            )
+
+        if audience != None:
+            fields.append(
+                SearchCondition(
+                    "id IN (SELECT book_id FROM books_audiences AS ges WHERE audience_id IN (SELECT id FROM audiences WHERE name ilike %s))",
+                    ["%%" + audience + "%%"],
+                )
+            )
 
         return search_internal(
             orm,

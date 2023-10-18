@@ -43,8 +43,22 @@ def search_internal(
     offset: Optional[int] = None,
     limit: Optional[int] = None,
 ) -> SearchResult:
+    """Does the actual searching part (querying, result count, etc)
+
+    Args:
+        orm (ORM): ORM Object
+        table (str): Table to search
+        factory (type[Record]): Class factory
+        conditions (Optional[list[SearchCondition]], optional): List of conditions and format values. Defaults to None.
+        order (Optional[ORDER_PARAM], optional): Ordering data. Defaults to None.
+        offset (Optional[int], optional): First record to get. Defaults to None.
+        limit (Optional[int], optional): Max number of records past offset to get. Defaults to None.
+
+    Returns:
+        SearchResult: Search result
+    """
     fields = []
-    assembled = "SELECT * FROM {table}{conditions}{order}{offset}{limit}".format(
+    assembled = "SELECT * FROM {table} AS root{conditions}{order}{offset}{limit}".format(
         table=table,
         conditions=" WHERE " + " AND ".join([c.condition for c in conditions])
         if len(conditions) > 0
@@ -56,7 +70,7 @@ def search_internal(
         limit=" LIMIT " + str(limit) if limit != None else "",
     )
 
-    assembled_count = "SELECT COUNT(*) FROM {table}{conditions}".format(
+    assembled_count = "SELECT COUNT(*) FROM {table} AS root{conditions}".format(
         table=table,
         conditions=" WHERE " + " AND ".join([c.condition for c in conditions])
         if len(conditions) > 0
