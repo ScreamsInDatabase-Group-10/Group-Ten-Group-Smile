@@ -41,6 +41,9 @@ class Record:
     # Implement in subclass to delete from database automatically
     def delete(self):
         raise NotImplementedError
+    
+    def __repr__(self) -> str:
+        return "Record<{}>".format(", ".join([f"{k} = {v}" for k, v in self.__dict__.items() if not k in ["db", "table", "orm"]]))
 
 # Extremely basic ORM, just abstracts away some common tasks into OOP
 class ORM:

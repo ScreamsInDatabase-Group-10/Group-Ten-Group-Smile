@@ -1,5 +1,6 @@
 from psycopg import Connection
 from util.orm import Record, ORM
+from util.search import search_internal, SearchCondition, SearchResult, PaginationParams
 from datetime import datetime
 from typing import Literal, Optional
 
@@ -44,10 +45,12 @@ class ContributorRecord(Record):
             ),
             {"id": self.id},
         )
-        results = [BookRecord(self.db, "books", self.orm, *r) for r in cursor.fetchall()]
+        results = [
+            BookRecord(self.db, "books", self.orm, *r) for r in cursor.fetchall()
+        ]
         cursor.close()
         return results
-    
+
     def save(self):
         self.db.execute(
             "UPDATE "
@@ -167,3 +170,42 @@ class BookRecord(Record):
         ]
         cursor.close()
         return results
+
+    @classmethod
+    def search(
+        cls,
+        orm: ORM,
+        title: Optional[str] = None,
+        min_length: Optional[int] = None,
+        max_length: Optional[int] = None,
+        edition: Optional[str] = None,
+        released_after: Optional[datetime] = None,
+        released_before: Optional[datetime] = None,
+        isbn: Optional[int] = None,
+        pagination: Optional[PaginationParams] = {},
+    ) -> SearchResult:
+        fields = []
+        if title != None:
+            fields.append(SearchCondition("title ilike %s", ["%%" + title + "%%"]))
+        if min_length != None:
+            fields.append(SearchCondition("length >= %s", [min_length]))
+        if max_length != None:
+            fields.append(SearchCondition("lengtth <= %s", [max_length]))
+        if edition != None:
+            fields.append(SearchCondition("edition ilike %s", ["%%" + edition + "%%"]))
+        if released_after != None:
+            fields.append(SearchCondition("release_dt >= %s", [released_after]))
+        if released_before != None:
+            fields.append(SearchCondition("release_dt <= %s", [released_before]))
+        if isbn != None:
+            fields.append(SearchCondition("isbn = %s", [isbn]))
+
+        return search_internal(
+            orm,
+            "books",
+            BookRecord,
+            fields,
+            pagination.get("order") if pagination else None,
+            pagination.get("offset") if pagination else None,
+            pagination.get("limit") if pagination else None,
+        )
