@@ -53,7 +53,6 @@ class ApplicationContext:
         self.orm.register("books", BookRecord)
         self.orm.register("users", UserRecord)
         self.logged_in: Optional[UserRecord] = None
-        print(BookRecord.search(self.orm, audience="children", pagination={"limit": 10}))
 
     # Parse options from environment variables
     def parse_options(self) -> ContextOptions:
