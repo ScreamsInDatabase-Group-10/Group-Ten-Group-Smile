@@ -9,6 +9,7 @@ from .orm import Record, SearchResult, PaginationParams
 from typing import Any, Callable, Coroutine, Union
 from typing_extensions import TypedDict
 from rich.console import RenderableType
+from threading import Thread
 
 class PaginatedColumn(TypedDict):
     key: str
@@ -26,8 +27,6 @@ class PaginatedTable(ContextWidget):
     loading: reactive[bool]
     BINDINGS = [
         ("ctrl+r", "refresh()", "Refresh Data"),
-        ("ctrl+left", "pagination_previous()", "Previous Page")
-        ("ctrl+right", "pagination_next()", "Next Page")
     ]
 
     def __init__(
@@ -39,23 +38,21 @@ class PaginatedTable(ContextWidget):
         id: str | None = None,
         classes: str | None = None,
         disabled: bool = False,
-        initial_data: list[Record] = [],
         initial_pagination: PaginationParams = {"offset": 0, "limit": 50, "order": []},
         initial_params: dict[str, Any] = {},
         initial_total: int = 0
     ) -> None:
         super().__init__(
-            *children, name=name, id=id, classes=classes, disabled=disabled
+            *children, name=name, id=id, classes=" ".join([*(classes.split(" ") if classes else []), "paginated-table"]), disabled=disabled
         )
         self.result_factory = factory
-        self.data = initial_data
+        self.data = []
         self.columns = columns
         self.pagination = initial_pagination
         self.params = initial_params
         self.total = initial_total
         self.loading = False
 
-    @work(exclusive=False, thread=True, group="pagination-row-render")
     def render_row(self, record: Record, row: int) -> None:
         rendered = []
         for c in self.columns:
@@ -67,15 +64,15 @@ class PaginatedTable(ContextWidget):
         self.rows[row] = rendered
 
         for column in range(len(self.rows[row])):
-            self.query_one(".paginated-table", expect_type=DataTable).update_cell_at(Coordinate(row, column), self.rows[row][column])
+            self.query_one(".paginated-table", expect_type=DataTable).update_cell_at(Coordinate(row, column), self.rows[row][column], update_width=True)
 
     def render_rows(self):
         self.rows = [["" for column in self.columns] for record in self.data]
         table = self.query_one(".paginated-table", expect_type=DataTable)
         table.clear()
-        table.add_rows(*self.rows)
+        table.add_rows(self.rows)
         for row in range(len(self.data)):
-            self.render_row(self.data[row], row)
+            Thread(target=self.render_row, args=[self.data[row], row]).start()
 
     @work(exclusive=True, thread=True, group="pagination-update")
     def update_data(self):
@@ -91,9 +88,9 @@ class PaginatedTable(ContextWidget):
         self.update_data()
 
     def compose(self) -> ComposeResult:
-        yield DataTable(id=self.id, classes=" ".join(list(*(self.classes.split(" ") if self.classes else []), "paginated-table")))
+        yield DataTable(id=self.id, classes=" ".join(self.classes))
 
     def on_mount(self) -> None:
         table = self.query_one(".paginated-table", expect_type=DataTable)
-        table.add_columns(*[c["name"].title() for c in self.columns])
-        self.render_rows()
+        table.add_columns(*[c["name"] for c in self.columns])
+        self.update_data()

@@ -229,8 +229,8 @@ class BookRecord(Record):
         if title != None:
             fields.append(
                 SearchCondition(
-                    "title ilike %s OR title ilike %s",
-                    ["%%" + title + "%%", "%%" + "%%".join(list(title)) + "%%"],
+                    "title ilike %s",
+                    ["%%" + title + "%%"],
                 )
             )
         if min_length != None:
@@ -271,7 +271,7 @@ class BookRecord(Record):
                     ["%%" + audience + "%%"],
                 )
             )
-
+        print(fields)
         return search_internal(
             orm,
             "books",
