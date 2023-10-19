@@ -1,0 +1,31 @@
+.paginated-table {
+    height: 9fr;
+}
+
+.pagination-controls {
+    height: 1fr;
+    grid-size: 10 1;
+    margin-top: 1;
+    grid-gutter: 1 1;
+}
+
+.pagination-control-item.previous {
+    column-span: 1;
+    width: 100%;
+}
+
+.pagination-control-item.next {
+    column-span: 1;
+    width: 100%;
+}
+
+.pagination-control-item.status {
+    column-span: 7;
+    content-align: center middle;
+    width: 100%;
+}
+
+.pagination-control-item.page-size {
+    column-span: 1;
+    width: 100%;
+}

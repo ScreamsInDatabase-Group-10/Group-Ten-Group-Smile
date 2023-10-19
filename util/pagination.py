@@ -1,6 +1,7 @@
 from textual.app import ComposeResult
 from textual.widget import Widget
-from textual.widgets import DataTable
+from textual.widgets import DataTable, Button, Label, Select
+from textual.containers import Container, Grid
 from .widget import ContextWidget
 from textual.reactive import reactive
 from textual import events, work
@@ -10,6 +11,8 @@ from typing import Any, Callable, Coroutine, Union
 from typing_extensions import TypedDict
 from rich.console import RenderableType
 from threading import Thread
+import math
+
 
 class PaginatedColumn(TypedDict):
     key: str
@@ -25,6 +28,7 @@ class PaginatedTable(ContextWidget):
     params: reactive[dict[str, Any]]
     total: reactive[int]
     loading: reactive[bool]
+    page_status: reactive[str]
     BINDINGS = [
         ("ctrl+r", "refresh()", "Refresh Data"),
     ]
@@ -38,12 +42,12 @@ class PaginatedTable(ContextWidget):
         id: str | None = None,
         classes: str | None = None,
         disabled: bool = False,
-        initial_pagination: PaginationParams = {"offset": 0, "limit": 50, "order": []},
+        initial_pagination: PaginationParams = {"offset": 0, "limit": 25, "order": []},
         initial_params: dict[str, Any] = {},
         initial_total: int = 0
     ) -> None:
         super().__init__(
-            *children, name=name, id=id, classes=" ".join([*(classes.split(" ") if classes else []), "paginated-table"]), disabled=disabled
+            *children, name=name, id=id, classes=classes, disabled=disabled
         )
         self.result_factory = factory
         self.data = []
@@ -52,6 +56,13 @@ class PaginatedTable(ContextWidget):
         self.params = initial_params
         self.total = initial_total
         self.loading = False
+        self.calculate_page_status()
+
+    def calculate_page_status(self) -> None:
+        page_size = self.pagination["limit"]
+        total_pages = math.ceil(self.total / page_size) if self.total > 0 and page_size > 0 else 1
+        current_page = math.floor(self.pagination["offset"] / (page_size if page_size > 0 else self.pagination["offset"])) + 1
+        self.page_status = f"{current_page} / {total_pages}"
 
     def render_row(self, record: Record, row: int) -> None:
         rendered = []
@@ -64,7 +75,9 @@ class PaginatedTable(ContextWidget):
         self.rows[row] = rendered
 
         for column in range(len(self.rows[row])):
-            self.query_one(".paginated-table", expect_type=DataTable).update_cell_at(Coordinate(row, column), self.rows[row][column], update_width=True)
+            self.query_one(".paginated-table", expect_type=DataTable).update_cell_at(
+                Coordinate(row, column), self.rows[row][column], update_width=True
+            )
 
     def render_rows(self):
         self.rows = [["" for column in self.columns] for record in self.data]
@@ -78,7 +91,9 @@ class PaginatedTable(ContextWidget):
     def update_data(self):
         """Update data from current attrs"""
         self.loading = True
-        result = self.result_factory.search(self.context.orm, self.pagination, **self.params)
+        result = self.result_factory.search(
+            self.context.orm, self.pagination, **self.params
+        )
         self.total = result.total
         self.data = result.results
         self.render_rows()
@@ -88,7 +103,18 @@ class PaginatedTable(ContextWidget):
         self.update_data()
 
     def compose(self) -> ComposeResult:
-        yield DataTable(id=self.id, classes=" ".join(self.classes))
+        yield Container(
+            DataTable(classes="paginated-table"),
+            Grid(
+                Button("<- Previous", classes="pagination-control-item previous"),
+                Label(self.page_status, classes="pagination-control-item status"),
+                Button("Previous ->", classes="pagination-control-item next"),
+                Select([("10", 10), ("25", 25), ("50", 50)], classes="pagination-control-item page-size", value=25),
+                classes="pagination-controls"
+            ),
+            id=self.id,
+            classes=" ".join(self.classes) + " pagination-root",
+        )
 
     def on_mount(self) -> None:
         table = self.query_one(".paginated-table", expect_type=DataTable)
