@@ -60,6 +60,20 @@ class BooksPanel(ContextWidget):
                             [p.name for p in publishers]
                         ),
                     },
+                    {
+                        "key": "genres",
+                        "name": "Genres",
+                        "render": lambda genres: ", ".join(
+                            list(set([g.name for g in genres]))
+                        ),
+                    },
+                    {
+                        "key": "audiences",
+                        "name": "Audiences",
+                        "render": lambda audiences: ", ".join(
+                            list(set([a.name for a in audiences]))
+                        ),
+                    },
                 ],
                 id="book-results-section",
                 classes="panel-sections book-results",

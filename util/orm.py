@@ -41,6 +41,7 @@ def search_internal(
     order: Optional[ORDER_PARAM] = None,
     offset: Optional[int] = None,
     limit: Optional[int] = None,
+    format_query: str = "SELECT * FROM {table} AS root{conditions}{order}{offset}{limit}"
 ) -> SearchResult:
     """Does the actual searching part (querying, result count, etc)
 
@@ -57,7 +58,7 @@ def search_internal(
         SearchResult: Search result
     """
     fields = []
-    assembled = "SELECT * FROM {table} AS root{conditions}{order}{offset}{limit}".format(
+    assembled = format_query.format(
         table=table,
         conditions=" WHERE " + " AND ".join([c.condition for c in conditions])
         if len(conditions) > 0

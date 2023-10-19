@@ -1,16 +1,50 @@
 from psycopg import Connection
-from util.orm import Record, ORM, SearchResult, SearchCondition, PaginationParams, search_internal
+from util.orm import (
+    Record,
+    ORM,
+    SearchResult,
+    SearchCondition,
+    PaginationParams,
+    search_internal,
+)
 from datetime import datetime
 from typing import Literal, Optional
 
+BOOK_FMT = """
+SELECT 
+		books.id AS id, 
+		books.title as title, 
+		books.length as length, 
+		books.edition as edition, 
+		books.release_dt as release_dt, 
+		books.isbn as isbn, 
+		string_agg(genres.id || ':' || genres.name, '|') as genres,
+		string_agg(audiences.id || ':' || audiences.name, '|') as audiences FROM {table}
+	INNER JOIN books_genres ON books_genres.book_id = books.id
+	INNER JOIN genres ON books_genres.genre_id = genres.id
+	INNER JOIN books_audiences ON books_audiences.book_id = books.id
+	INNER JOIN audiences ON books_audiences.audience_id = audiences.id
+	{conditions}
+	GROUP BY books.id
+	{order}
+    {offset}
+    {limit}
+"""
+
+
 class AudienceRecord(Record):
-    def __init__(self, db: Connection, table: str, orm: ORM, id: int, name: str, *args) -> None:
+    def __init__(
+        self, db: Connection, table: str, orm: ORM, id: int, name: str, *args
+    ) -> None:
         super().__init__(db, table, orm, *args)
         self.id = id
         self.name = name
 
+
 class GenreRecord(Record):
-    def __init__(self, db: Connection, table: str, orm: ORM, id: int, name: str, *args) -> None:
+    def __init__(
+        self, db: Connection, table: str, orm: ORM, id: int, name: str, *args
+    ) -> None:
         super().__init__(db, table, orm, *args)
         self.id = id
         self.name = name
@@ -92,11 +126,12 @@ class BookRecord(Record):
         edition: str,
         release_dt: datetime,
         isbn: int,
+        *args,
         _authors: list[ContributorRecord] = None,
         _editors: list[ContributorRecord] = None,
         _publishers: list[ContributorRecord] = None,
         _audiences: list[AudienceRecord] = None,
-        _genres: list[GenreRecord] = None
+        _genres: list[GenreRecord] = None,
     ) -> None:
         super().__init__(db, table, orm)
         self.id = id
@@ -110,7 +145,7 @@ class BookRecord(Record):
             "editors": _editors,
             "publishers": _publishers,
             "audiences": _audiences,
-            "_genres": _genres
+            "genres": _genres,
         }
 
     def save(self):
@@ -142,7 +177,10 @@ class BookRecord(Record):
             "SELECT * FROM audiences AS root WHERE id IN (SELECT audience_id FROM books_audiences WHERE book_id = %(id)s)",
             {"id": self.id},
         )
-        results = [AudienceRecord(self.db, "audiences", self.orm, *r) for r in cursor.fetchall()]
+        results = [
+            AudienceRecord(self.db, "audiences", self.orm, *r)
+            for r in cursor.fetchall()
+        ]
         self.cache["audiences"] = results
         cursor.close()
         return results
@@ -156,7 +194,9 @@ class BookRecord(Record):
             "SELECT * FROM genres AS root WHERE id IN (SELECT genre_id FROM books_genres WHERE book_id = %(id)s)",
             {"id": self.id},
         )
-        results = [GenreRecord(self.db, "genres", self.orm, *r) for r in cursor.fetchall()]
+        results = [
+            GenreRecord(self.db, "genres", self.orm, *r) for r in cursor.fetchall()
+        ]
         self.cache["genres"] = results
         cursor.close()
         return results
@@ -208,6 +248,43 @@ class BookRecord(Record):
         self.cache["publishers"] = results
         cursor.close()
         return results
+
+    @classmethod
+    def _from_search(
+        cls,
+        db: Connection,
+        table: str,
+        orm: ORM,
+        id: int,
+        title: str,
+        length: int,
+        edition: str,
+        release_dt: datetime,
+        isbn: int,
+        genres: str,
+        audiences: str,
+    ):
+        genre_records = [
+            GenreRecord(db, "genres", orm, int(i.split(":")[0]), i.split(":")[1])
+            for i in genres.split("|")
+        ]
+        audience_records = [
+            AudienceRecord(db, "audiences", orm, int(i.split(":")[0]), i.split(":")[1])
+            for i in audiences.split("|")
+        ]
+        return BookRecord(
+            db,
+            table,
+            orm,
+            id,
+            title,
+            length,
+            edition,
+            release_dt,
+            isbn,
+            _audiences=audience_records,
+            _genres=genre_records,
+        )
 
     @classmethod
     def search(
@@ -271,12 +348,14 @@ class BookRecord(Record):
                     ["%%" + audience + "%%"],
                 )
             )
+
         return search_internal(
             orm,
             "books",
-            BookRecord,
+            BookRecord._from_search,
             fields,
             pagination.get("order") if pagination else None,
             pagination.get("offset") if pagination else None,
             pagination.get("limit") if pagination else None,
+            format_query=BOOK_FMT,
         )
