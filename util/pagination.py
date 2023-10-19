@@ -27,7 +27,6 @@ class PaginatedTable(ContextWidget):
     result_factory: reactive[type[Record]]
     params: reactive[dict[str, Any]]
     total: reactive[int]
-    loading: reactive[bool]
     page_status: reactive[str]
     BINDINGS = [
         ("ctrl+r", "refresh()", "Refresh Data"),
@@ -55,7 +54,6 @@ class PaginatedTable(ContextWidget):
         self.pagination = initial_pagination
         self.params = initial_params
         self.total = initial_total
-        self.loading = False
         self.calculate_page_status()
 
     def calculate_page_status(self) -> None:
@@ -102,7 +100,10 @@ class PaginatedTable(ContextWidget):
     @work(exclusive=True, thread=True, group="pagination-update")
     def update_data(self):
         """Update data from current attrs"""
-        self.loading = True
+        try:
+            self.query_one(".paginated-table").loading = True
+        except:
+            pass
         result = self.result_factory.search(
             self.context.orm, self.pagination, **self.params
         )
@@ -111,6 +112,10 @@ class PaginatedTable(ContextWidget):
         self.render_rows()
         self.loading = False
         self.calculate_page_status()
+        try:
+            self.query_one(".paginated-table").loading = False
+        except:
+            pass
 
     def action_refresh(self):
         self.update_data()
@@ -141,8 +146,23 @@ class PaginatedTable(ContextWidget):
 
     @on(Button.Pressed, ".pagination-control-item.previous")
     def on_previous_pressed(self):
-        pass
+        self.go_previous()
 
     @on(Button.Pressed, ".pagination-control-item.next")
     def on_next_pressed(self):
-        pass
+        self.go_next()
+
+    @on(Select.Changed, ".pagination-control-item.page-size")
+    def on_page_size_changed(self, event: Select.Changed):
+        self.pagination["limit"] = event.value
+        self.update_data()
+
+    def go_previous(self):
+        if self.pagination["offset"] > 0:
+            self.pagination["offset"] = max(0, self.pagination["offset"] - self.pagination["limit"])
+            self.update_data()
+    
+    def go_next(self):
+        if self.pagination["offset"] < self.total - self.pagination["limit"]:
+            self.pagination["offset"] = min(self.total - self.pagination["limit"], self.pagination["offset"] + self.pagination["limit"])
+            self.update_data()
