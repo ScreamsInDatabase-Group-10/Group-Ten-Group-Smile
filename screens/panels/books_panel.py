@@ -1,7 +1,7 @@
 from textual.app import ComposeResult
-from textual.widgets import Placeholder
-from textual.containers import Container
-from util import ContextWidget, PaginatedTable
+from textual.widgets import Placeholder, Input, Button
+from textual.containers import Container, Horizontal
+from util import ContextWidget, PaginatedTable, ContextModal
 from app_types import BookRecord
 from datetime import datetime
 
@@ -9,8 +9,10 @@ from datetime import datetime
 class BooksPanel(ContextWidget):
     def compose(self) -> ComposeResult:
         yield Container(
-            Placeholder(
-                "Search Bar",
+            Horizontal(
+                Input(value="", placeholder="Search Books", id="search-main"),
+                Button("Search", id="btn-search"),
+                Button("Advanced", id="btn-advanced"),
                 id="book-search-section",
                 classes="panel-sections book-search",
             ),
@@ -66,3 +68,4 @@ class BooksPanel(ContextWidget):
             classes="panel books",
             id="app-panel-books",
         )
+    

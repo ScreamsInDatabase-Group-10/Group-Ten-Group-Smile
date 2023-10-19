@@ -5,5 +5,14 @@
 }
 
 #book-results-section {
-    height: 7fr;
+    height: 10fr;
+}
+
+#book-search-section #search-main {
+    width: 8fr;
+}
+
+#book-search-section Button {
+    width: 1fr;
+    margin: 0 1;
 }
