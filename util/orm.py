@@ -1,6 +1,94 @@
 from psycopg import Connection, Cursor
-from typing import Literal, Optional
+from typing import Literal, Optional, Any, Union
+from dataclasses import dataclass, asdict
 from .exceptions import *
+from typing_extensions import TypedDict
+
+ORDER_PARAM = list[list[str, Literal["ASC", "DESC"]]]
+
+
+@dataclass
+class SearchQuery:
+    parameters: dict[str, Any]
+    order_by: ORDER_PARAM
+    offset: int
+    limit: int
+
+
+@dataclass
+class SearchResult:
+    results: list["Record"]
+    total: int
+
+
+@dataclass
+class SearchCondition:
+    condition: str
+    fields: list[Any]
+
+
+class PaginationParams(TypedDict):
+    offset: Optional[int]
+    limit: Optional[int]
+    order: Optional[ORDER_PARAM]
+
+
+def search_internal(
+    orm: "ORM",
+    table: str,
+    factory: type["Record"],
+    conditions: Optional[list[SearchCondition]] = None,
+    order: Optional[ORDER_PARAM] = None,
+    offset: Optional[int] = None,
+    limit: Optional[int] = None,
+) -> SearchResult:
+    """Does the actual searching part (querying, result count, etc)
+
+    Args:
+        orm (ORM): ORM Object
+        table (str): Table to search
+        factory (type[Record]): Class factory
+        conditions (Optional[list[SearchCondition]], optional): List of conditions and format values. Defaults to None.
+        order (Optional[ORDER_PARAM], optional): Ordering data. Defaults to None.
+        offset (Optional[int], optional): First record to get. Defaults to None.
+        limit (Optional[int], optional): Max number of records past offset to get. Defaults to None.
+
+    Returns:
+        SearchResult: Search result
+    """
+    fields = []
+    assembled = "SELECT * FROM {table} AS root{conditions}{order}{offset}{limit}".format(
+        table=table,
+        conditions=" WHERE " + " AND ".join([c.condition for c in conditions])
+        if len(conditions) > 0
+        else "",
+        order=" ORDER BY " + ", ".join([o[0] + " " + o[1] for o in order])
+        if order
+        else "",
+        offset=" OFFSET " + str(offset) if offset != None else "",
+        limit=" LIMIT " + str(limit) if limit != None else "",
+    )
+
+    assembled_count = "SELECT COUNT(*) FROM {table} AS root{conditions}".format(
+        table=table,
+        conditions=" WHERE " + " AND ".join([c.condition for c in conditions])
+        if len(conditions) > 0
+        else "",
+    )
+
+    for c in conditions:
+        fields.extend(c.fields)
+
+    cursor = orm.db.execute(assembled, fields)
+    cursor_count = orm.db.execute(assembled_count, fields)
+    total_count = cursor_count.fetchone()[0]
+    results = [factory(orm.db, table, orm, *r) for r in cursor.fetchall()]
+    cursor.close()
+    cursor_count.close()
+    return SearchResult(
+        results,
+        total_count,
+    )
 
 TABLE_NAMES = Literal[
     "books",
@@ -44,6 +132,13 @@ class Record:
     
     def __repr__(self) -> str:
         return "Record<{}>".format(", ".join([f"{k} = {v}" for k, v in self.__dict__.items() if not k in ["db", "table", "orm"]]))
+    
+    def dict(self) -> dict:
+        return {k:v for k, v in self.__dict__.items() if not k in ["db", "table", "orm"]}
+    
+    @classmethod
+    def search(self, orm: "ORM", pagination: PaginationParams, **kwargs) -> SearchResult:
+        raise NotImplementedError
 
 # Extremely basic ORM, just abstracts away some common tasks into OOP
 class ORM:

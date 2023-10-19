@@ -1,8 +1,19 @@
 from psycopg import Connection
-from util.orm import Record, ORM
-from util.search import search_internal, SearchCondition, SearchResult, PaginationParams
+from util.orm import Record, ORM, SearchResult, SearchCondition, PaginationParams, search_internal
 from datetime import datetime
 from typing import Literal, Optional
+
+class AudienceRecord(Record):
+    def __init__(self, db: Connection, table: str, orm: ORM, id: int, name: str, *args) -> None:
+        super().__init__(db, table, orm, *args)
+        self.id = id
+        self.name = name
+
+class GenreRecord(Record):
+    def __init__(self, db: Connection, table: str, orm: ORM, id: int, name: str, *args) -> None:
+        super().__init__(db, table, orm, *args)
+        self.id = id
+        self.name = name
 
 
 class ContributorRecord(Record):
@@ -81,6 +92,11 @@ class BookRecord(Record):
         edition: str,
         release_dt: datetime,
         isbn: int,
+        _authors: list[ContributorRecord] = None,
+        _editors: list[ContributorRecord] = None,
+        _publishers: list[ContributorRecord] = None,
+        _audiences: list[AudienceRecord] = None,
+        _genres: list[GenreRecord] = None
     ) -> None:
         super().__init__(db, table, orm)
         self.id = id
@@ -89,6 +105,13 @@ class BookRecord(Record):
         self.edition = edition
         self.release_dt = release_dt
         self.isbn = isbn
+        self.cache = {
+            "authors": _authors,
+            "editors": _editors,
+            "publishers": _publishers,
+            "audiences": _audiences,
+            "_genres": _genres
+        }
 
     def save(self):
         self.db.execute(
@@ -110,30 +133,38 @@ class BookRecord(Record):
         self.db.execute("DELETE FROM " + self.table + " WHERE id = %s", (self.id,))
         self.db.commit()
 
-    # Return an {id:name} mapping of audiences
+    # Return a list of AudienceRecord
     @property
-    def audiences(self) -> dict[int, str]:
+    def audiences(self) -> list[AudienceRecord]:
+        if self.cache["audiences"]:
+            return self.cache["audiences"]
         cursor = self.db.execute(
             "SELECT * FROM audiences AS root WHERE id IN (SELECT audience_id FROM books_audiences WHERE book_id = %(id)s)",
             {"id": self.id},
         )
-        results = {r[0]: r[1] for r in cursor.fetchall()}
+        results = [AudienceRecord(self.db, "audiences", self.orm, *r) for r in cursor.fetchall()]
+        self.cache["audiences"] = results
         cursor.close()
         return results
 
-    # Return an {id:name} mapping of genres
+    # Return a list of GenreRecord
     @property
-    def genres(self) -> dict[int, str]:
+    def genres(self) -> list[GenreRecord]:
+        if self.cache["genres"]:
+            return self.cache["genres"]
         cursor = self.db.execute(
             "SELECT * FROM genres AS root WHERE id IN (SELECT genre_id FROM books_genres WHERE book_id = %(id)s)",
             {"id": self.id},
         )
-        results = {r[0]: r[1] for r in cursor.fetchall()}
+        results = [GenreRecord(self.db, "genres", self.orm, *r) for r in cursor.fetchall()]
+        self.cache["genres"] = results
         cursor.close()
         return results
 
     @property
     def authors(self) -> list[ContributorRecord]:
+        if self.cache["authors"]:
+            return self.cache["authors"]
         cursor = self.db.execute(
             "SELECT * FROM contributors AS root WHERE id IN (SELECT contributor_id FROM books_authors WHERE book_id = %(id)s)",
             {"id": self.id},
@@ -142,11 +173,14 @@ class BookRecord(Record):
             ContributorRecord(self.db, "contributors", self.orm, "author", *r)
             for r in cursor.fetchall()
         ]
+        self.cache["authors"] = results
         cursor.close()
         return results
 
     @property
     def editors(self) -> list[ContributorRecord]:
+        if self.cache["editors"]:
+            return self.cache["editors"]
         cursor = self.db.execute(
             "SELECT * FROM contributors AS root WHERE id IN (SELECT contributor_id FROM books_editors WHERE book_id = %(id)s)",
             {"id": self.id},
@@ -155,11 +189,14 @@ class BookRecord(Record):
             ContributorRecord(self.db, "contributors", self.orm, "editor", *r)
             for r in cursor.fetchall()
         ]
+        self.cache["editors"] = results
         cursor.close()
         return results
 
     @property
     def publishers(self) -> list[ContributorRecord]:
+        if self.cache["publishers"]:
+            return self.cache["publishers"]
         cursor = self.db.execute(
             "SELECT * FROM contributors AS root WHERE id IN (SELECT contributor_id FROM books_publishers WHERE book_id = %(id)s)",
             {"id": self.id},
@@ -168,13 +205,15 @@ class BookRecord(Record):
             ContributorRecord(self.db, "contributors", self.orm, "publisher", *r)
             for r in cursor.fetchall()
         ]
+        self.cache["publishers"] = results
         cursor.close()
         return results
 
     @classmethod
     def search(
-        cls,
+        self,
         orm: ORM,
+        pagination: PaginationParams,
         title: Optional[str] = None,
         min_length: Optional[int] = None,
         max_length: Optional[int] = None,
@@ -185,7 +224,6 @@ class BookRecord(Record):
         author_name: Optional[str] = None,
         genre: Optional[str] = None,
         audience: Optional[str] = None,
-        pagination: Optional[PaginationParams] = {},
     ) -> SearchResult:
         fields = []
         if title != None:
@@ -198,7 +236,7 @@ class BookRecord(Record):
         if min_length != None:
             fields.append(SearchCondition("length >= %s", [min_length]))
         if max_length != None:
-            fields.append(SearchCondition("lengtth <= %s", [max_length]))
+            fields.append(SearchCondition("length <= %s", [max_length]))
         if edition != None:
             fields.append(SearchCondition("edition ilike %s", ["%%" + edition + "%%"]))
         if released_after != None:
