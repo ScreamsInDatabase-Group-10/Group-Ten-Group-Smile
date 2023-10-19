@@ -1,10 +1,10 @@
 from textual.app import ComposeResult
 from textual.widget import Widget
-from textual.widgets import DataTable, Button, Label, Select
-from textual.containers import Container, Grid
+from textual.widgets import DataTable, Button, Digits, Select, Label
+from textual.containers import Container, Grid, Middle
 from .widget import ContextWidget
 from textual.reactive import reactive
-from textual import events, work
+from textual import work, on
 from textual.coordinate import Coordinate
 from .orm import Record, SearchResult, PaginationParams
 from typing import Any, Callable, Coroutine, Union
@@ -44,7 +44,7 @@ class PaginatedTable(ContextWidget):
         disabled: bool = False,
         initial_pagination: PaginationParams = {"offset": 0, "limit": 25, "order": []},
         initial_params: dict[str, Any] = {},
-        initial_total: int = 0
+        initial_total: int = 0,
     ) -> None:
         super().__init__(
             *children, name=name, id=id, classes=classes, disabled=disabled
@@ -60,9 +60,21 @@ class PaginatedTable(ContextWidget):
 
     def calculate_page_status(self) -> None:
         page_size = self.pagination["limit"]
-        total_pages = math.ceil(self.total / page_size) if self.total > 0 and page_size > 0 else 1
-        current_page = math.floor(self.pagination["offset"] / (page_size if page_size > 0 else self.pagination["offset"])) + 1
-        self.page_status = f"{current_page} / {total_pages}"
+        total_pages = (
+            math.ceil(self.total / page_size) if self.total > 0 and page_size > 0 else 1
+        )
+        current_page = (
+            math.floor(
+                self.pagination["offset"]
+                / (page_size if page_size > 0 else self.pagination["offset"])
+            )
+            + 1
+        )
+        self.page_status = f"{current_page} : {total_pages}"
+        try:
+            self.query_one(".status", expect_type=Digits).update(self.page_status)
+        except:
+            pass
 
     def render_row(self, record: Record, row: int) -> None:
         rendered = []
@@ -98,6 +110,7 @@ class PaginatedTable(ContextWidget):
         self.data = result.results
         self.render_rows()
         self.loading = False
+        self.calculate_page_status()
 
     def action_refresh(self):
         self.update_data()
@@ -107,10 +120,17 @@ class PaginatedTable(ContextWidget):
             DataTable(classes="paginated-table"),
             Grid(
                 Button("<- Previous", classes="pagination-control-item previous"),
-                Label(self.page_status, classes="pagination-control-item status"),
-                Button("Previous ->", classes="pagination-control-item next"),
-                Select([("10", 10), ("25", 25), ("50", 50)], classes="pagination-control-item page-size", value=25),
-                classes="pagination-controls"
+                Middle(Label(""), classes="pagination-control-item spacer"),
+                Digits(self.page_status, classes="pagination-control-item status"),
+                Middle(Label(""), classes="pagination-control-item spacer"),
+                Button("Next ->", classes="pagination-control-item next"),
+                Select(
+                    [("10", 10), ("25", 25), ("50", 50)],
+                    classes="pagination-control-item page-size",
+                    value=25,
+                    allow_blank=False,
+                ),
+                classes="pagination-controls",
             ),
             id=self.id,
             classes=" ".join(self.classes) + " pagination-root",
@@ -120,3 +140,11 @@ class PaginatedTable(ContextWidget):
         table = self.query_one(".paginated-table", expect_type=DataTable)
         table.add_columns(*[c["name"] for c in self.columns])
         self.update_data()
+
+    @on(Button.Pressed, ".pagination-control-item.previous")
+    def on_previous_pressed(self):
+        pass
+
+    @on(Button.Pressed, ".pagination-control-item.next")
+    def on_next_pressed(self):
+        pass

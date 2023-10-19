@@ -4,9 +4,10 @@
 
 .pagination-controls {
     height: 1fr;
-    grid-size: 10 1;
+    grid-size: 11 1;
     margin-top: 1;
     grid-gutter: 1 1;
+    align: center middle;
 }
 
 .pagination-control-item.previous {
@@ -20,9 +21,12 @@
 }
 
 .pagination-control-item.status {
-    column-span: 7;
-    content-align: center middle;
-    width: 100%;
+    column-span: 2;
+    align: center middle;
+}
+
+.pagination-control-item.spacer {
+    column-span: 3;
 }
 
 .pagination-control-item.page-size {
