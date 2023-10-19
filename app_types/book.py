@@ -271,7 +271,6 @@ class BookRecord(Record):
                     ["%%" + audience + "%%"],
                 )
             )
-        print(fields)
         return search_internal(
             orm,
             "books",
