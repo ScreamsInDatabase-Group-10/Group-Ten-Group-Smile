@@ -1,7 +1,7 @@
 from textual.app import ComposeResult
 from textual.widget import Widget
-from textual.widgets import DataTable, Button, Digits, Select, Label
-from textual.containers import Container, Grid, Middle
+from textual.widgets import DataTable, Button, Static, Select
+from textual.containers import Container, Grid
 from .widget import ContextWidget
 from textual.reactive import reactive
 from textual import work, on
@@ -70,9 +70,9 @@ class PaginatedTable(ContextWidget):
             )
             + 1
         )
-        self.page_status = f"{current_page} : {total_pages}"
+        self.page_status = f"[bold]{current_page} / {total_pages}[/bold]"
         try:
-            self.query_one(".status", expect_type=Digits).update(self.page_status)
+            self.query_one(".status", expect_type=Static).update(self.page_status)
         except:
             pass
 
@@ -120,9 +120,7 @@ class PaginatedTable(ContextWidget):
             DataTable(classes="paginated-table"),
             Grid(
                 Button("<- Previous", classes="pagination-control-item previous"),
-                Middle(Label(""), classes="pagination-control-item spacer"),
-                Digits(self.page_status, classes="pagination-control-item status"),
-                Middle(Label(""), classes="pagination-control-item spacer"),
+                Static(self.page_status, classes="pagination-control-item status"),
                 Button("Next ->", classes="pagination-control-item next"),
                 Select(
                     [("10", 10), ("25", 25), ("50", 50)],
