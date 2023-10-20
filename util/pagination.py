@@ -144,6 +144,7 @@ class PaginatedTable(ContextWidget):
         table = self.query_one(".paginated-table", expect_type=DataTable)
         table.add_columns(*[c["name"] for c in self.columns])
         self.update_data()
+        self.update_column_sorts()
 
     @on(Button.Pressed, ".pagination-control-item.previous")
     def on_previous_pressed(self):
@@ -160,10 +161,58 @@ class PaginatedTable(ContextWidget):
 
     def go_previous(self):
         if self.pagination["offset"] > 0:
-            self.pagination["offset"] = max(0, self.pagination["offset"] - self.pagination["limit"])
+            self.pagination["offset"] = max(
+                0, self.pagination["offset"] - self.pagination["limit"]
+            )
             self.update_data()
-    
+
     def go_next(self):
         if self.pagination["offset"] < self.total - self.pagination["limit"]:
-            self.pagination["offset"] = min(self.total - self.pagination["limit"], self.pagination["offset"] + self.pagination["limit"])
+            self.pagination["offset"] = min(
+                self.total - self.pagination["limit"],
+                self.pagination["offset"] + self.pagination["limit"],
+            )
             self.update_data()
+
+    @on(DataTable.HeaderSelected)
+    def on_column_select(self, event: DataTable.HeaderSelected):
+        if "sort_by" in self.columns[event.column_index].keys():
+            if self.columns[event.column_index]["sort_by"] in [
+                sort[0] for sort in self.pagination["order"]
+            ]:
+                cur_index = self.pagination["order"].index(
+                    next(
+                        filter(
+                            lambda x: x[0]
+                            == self.columns[event.column_index]["sort_by"],
+                            self.pagination["order"],
+                        )
+                    )
+                )
+                if self.pagination["order"][cur_index][1] == "ASC":
+                    self.pagination["order"][cur_index][1] = "DESC"
+                else:
+                    del self.pagination["order"][cur_index]
+            else:
+                self.pagination["order"].append([self.columns[event.column_index]["sort_by"], "ASC"])
+            self.update_column_sorts()
+            self.update_data()
+
+    def update_column_sorts(self):
+        table = self.query_one(".paginated-table", expect_type=DataTable)
+        new_columns = []
+        for c in range(len(self.columns)):
+            if "sort_by" in self.columns[c].keys():
+                if [self.columns[c]["sort_by"], "ASC"] in self.pagination["order"]:
+                    new_columns.append("▲ " + self.columns[c]["name"])
+                elif [self.columns[c]["sort_by"], "DESC"] in self.pagination["order"]:
+                    new_columns.append("▼ " + self.columns[c]["name"])
+                else:
+                    new_columns.append("◆ " + self.columns[c]["name"])
+            else:
+                new_columns.append(self.columns[c]["name"])
+        for k in list(table.columns.keys()):
+            table.remove_column(k)
+        table.add_columns(*new_columns)
+                    
+            

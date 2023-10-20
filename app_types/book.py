@@ -277,10 +277,15 @@ class BookRecord(Record):
         release_dt: datetime,
         isbn: int,
         genres: str,
+        genres_names: str,
         audiences: str,
+        audiences_names: str,
         publishers: str,
+        publishers_names: str,
         authors: str,
-        editors: str
+        authors_names: str,
+        editors: str,
+        editors_names: str
     ):
         genre_records = [
             GenreRecord(db, "genres", orm, int(i.split(":")[0]), i.split(":")[1])
