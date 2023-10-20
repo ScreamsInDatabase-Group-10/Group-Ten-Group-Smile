@@ -4,6 +4,36 @@ from textual.containers import Container, Horizontal
 from util import ContextWidget, PaginatedTable, ContextModal
 from app_types import BookRecord
 from datetime import datetime
+from typing_extensions import TypedDict
+
+
+class SearchFields(TypedDict):
+    title: str
+    min_length: int
+    max_length: int
+    edition: str
+    released_after: datetime
+    released_before: datetime
+    isbn: int
+    author_name: str
+    publisher_name: str
+    genre: str
+    audience: str
+
+
+class AdvancedSearchModal(ContextModal):
+    def __init__(
+        self,
+        field_values: SearchFields,
+        name: str | None = None,
+        id: str | None = None,
+        classes: str | None = None,
+    ) -> None:
+        super().__init__(name, id, classes)
+        self.fields = field_values
+
+    def compose(self) -> ComposeResult:
+        return super().compose()
 
 
 class BooksPanel(ContextWidget):

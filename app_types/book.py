@@ -340,6 +340,7 @@ class BookRecord(Record):
         released_before: Optional[datetime] = None,
         isbn: Optional[int] = None,
         author_name: Optional[str] = None,
+        publisher_name: Optional[str] = None,
         genre: Optional[str] = None,
         audience: Optional[str] = None,
     ) -> SearchResult:
@@ -385,8 +386,17 @@ class BookRecord(Record):
         if audience != None:
             fields.append(
                 SearchCondition(
-                    "id IN (SELECT book_id FROM books_audiences AS ges WHERE audience_id IN (SELECT id FROM audiences WHERE name ilike %s))",
+                    "id IN (SELECT book_id FROM books_audiences AS aud WHERE audience_id IN (SELECT id FROM audiences WHERE name ilike %s))",
                     ["%%" + audience + "%%"],
+                )
+            )
+        if author_name != None:
+            fields.append(
+                SearchCondition(
+                    "id IN (SELECT book_id FROM books_publishers AS pubs WHERE contributor_id IN (SELECT id FROM contributors WHERE name_last_company ilike %s))",
+                    [
+                        "%%" + publisher_name + "%%",
+                    ],
                 )
             )
 
