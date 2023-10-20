@@ -1,6 +1,6 @@
 from rich.console import RenderableType
 from textual.widget import Widget
-from textual.screen import Screen
+from textual.screen import Screen, ModalScreen
 from textual.widgets import Static
 from .context import ApplicationContext
 
@@ -28,6 +28,14 @@ class ContextWidget(Widget):
 
 class ContextScreen(Screen):
     def __init__(self, name=None, id=None, classes=None) -> None:
+        super().__init__(name, id, classes)
+        self.context: ApplicationContext = self.app.context
+
+
+class ContextModal(ModalScreen):
+    def __init__(
+        self, name: str | None = None, id: str | None = None, classes: str | None = None
+    ) -> None:
         super().__init__(name, id, classes)
         self.context: ApplicationContext = self.app.context
 

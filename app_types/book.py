@@ -1,8 +1,87 @@
 from psycopg import Connection
-from util.orm import Record, ORM
-from util.search import search_internal, SearchCondition, SearchResult, PaginationParams
+from util.orm import (
+    Record,
+    ORM,
+    SearchResult,
+    SearchCondition,
+    PaginationParams,
+    search_internal,
+)
 from datetime import datetime
 from typing import Literal, Optional
+
+# Big query strings for searching
+
+BOOK_FMT = """
+SELECT 
+		books.id AS id, 
+		books.title as title, 
+		books.length as length, 
+		books.edition as edition, 
+		books.release_dt as release_dt, 
+		books.isbn as isbn, 
+		string_agg(genres.id || ':' || genres.name, '|') as genres,
+		string_agg(genres.name, '|') as genres_names_only,
+		string_agg(audiences.id || ':' || audiences.name, '|') as audiences,
+		string_agg(audiences.name, '|') as audiences_names_only,
+		string_agg(contrib_publishers.id || ':' || contrib_publishers.name_last_company, '|') as publishers,
+		string_agg(contrib_publishers.name_last_company, '|') as publishers_names_only,
+		string_agg(contrib_authors.id || ':' || contrib_authors.name_first || ':' || contrib_authors.name_last_company, '|') as authors,
+		string_agg(contrib_authors.name_first || ' ' || contrib_authors.name_last_company, '|') as authors_names_only,
+		string_agg(contrib_editors.id || ':' || contrib_editors.name_first || ':' || contrib_editors.name_last_company, '|') as editors,
+		string_agg(contrib_editors.name_first || ' ' || contrib_editors.name_last_company, '|') as editors_names_only
+	FROM {table}
+	LEFT JOIN books_genres ON books_genres.book_id = books.id
+	LEFT JOIN genres ON books_genres.genre_id = genres.id
+	LEFT JOIN books_audiences ON books_audiences.book_id = books.id
+	LEFT JOIN audiences ON books_audiences.audience_id = audiences.id
+	LEFT JOIN books_publishers ON books_publishers.book_id = books.id
+	LEFT JOIN contributors AS contrib_publishers ON books_publishers.contributor_id = contrib_publishers.id
+	LEFT JOIN books_authors ON books_authors.book_id = books.id
+	LEFT JOIN contributors AS contrib_authors ON books_authors.contributor_id = contrib_authors.id
+	LEFT JOIN books_editors ON books_editors.book_id = books.id
+	LEFT JOIN contributors AS contrib_editors ON books_editors.contributor_id = contrib_editors.id
+	{conditions}
+	GROUP BY books.id
+	{order}
+    {offset}
+    {limit}
+"""
+
+BOOK_FMT_COUNT = """
+SELECT 
+		COUNT(books.id)
+	FROM {table}
+	LEFT JOIN books_genres ON books_genres.book_id = books.id
+	LEFT JOIN genres ON books_genres.genre_id = genres.id
+	LEFT JOIN books_audiences ON books_audiences.book_id = books.id
+	LEFT JOIN audiences ON books_audiences.audience_id = audiences.id
+	LEFT JOIN books_publishers ON books_publishers.book_id = books.id
+	LEFT JOIN contributors AS contrib_publishers ON books_publishers.contributor_id = contrib_publishers.id
+	LEFT JOIN books_authors ON books_authors.book_id = books.id
+	LEFT JOIN contributors AS contrib_authors ON books_authors.contributor_id = contrib_authors.id
+	LEFT JOIN books_editors ON books_editors.book_id = books.id
+	LEFT JOIN contributors AS contrib_editors ON books_editors.contributor_id = contrib_editors.id
+	{conditions}
+"""
+
+
+class AudienceRecord(Record):
+    def __init__(
+        self, db: Connection, table: str, orm: ORM, id: int, name: str, *args
+    ) -> None:
+        super().__init__(db, table, orm, *args)
+        self.id = id
+        self.name = name
+
+
+class GenreRecord(Record):
+    def __init__(
+        self, db: Connection, table: str, orm: ORM, id: int, name: str, *args
+    ) -> None:
+        super().__init__(db, table, orm, *args)
+        self.id = id
+        self.name = name
 
 
 class ContributorRecord(Record):
@@ -81,6 +160,12 @@ class BookRecord(Record):
         edition: str,
         release_dt: datetime,
         isbn: int,
+        *args,
+        _authors: list[ContributorRecord] = None,
+        _editors: list[ContributorRecord] = None,
+        _publishers: list[ContributorRecord] = None,
+        _audiences: list[AudienceRecord] = None,
+        _genres: list[GenreRecord] = None,
     ) -> None:
         super().__init__(db, table, orm)
         self.id = id
@@ -89,6 +174,13 @@ class BookRecord(Record):
         self.edition = edition
         self.release_dt = release_dt
         self.isbn = isbn
+        self.cache = {
+            "authors": _authors,
+            "editors": _editors,
+            "publishers": _publishers,
+            "audiences": _audiences,
+            "genres": _genres,
+        }
 
     def save(self):
         self.db.execute(
@@ -110,30 +202,44 @@ class BookRecord(Record):
         self.db.execute("DELETE FROM " + self.table + " WHERE id = %s", (self.id,))
         self.db.commit()
 
-    # Return an {id:name} mapping of audiences
+    # Return a list of AudienceRecord
     @property
-    def audiences(self) -> dict[int, str]:
+    def audiences(self) -> list[AudienceRecord]:
+        if self.cache["audiences"] != None:
+            return self.cache["audiences"]
         cursor = self.db.execute(
             "SELECT * FROM audiences AS root WHERE id IN (SELECT audience_id FROM books_audiences WHERE book_id = %(id)s)",
             {"id": self.id},
         )
-        results = {r[0]: r[1] for r in cursor.fetchall()}
+        results = [
+            AudienceRecord(self.db, "audiences", self.orm, *r)
+            for r in cursor.fetchall()
+        ]
+        self.cache["audiences"] = results
         cursor.close()
         return results
 
-    # Return an {id:name} mapping of genres
+    # Return a list of GenreRecord
     @property
-    def genres(self) -> dict[int, str]:
+    def genres(self) -> list[GenreRecord]:
+        if self.cache["genres"] != None:
+            return self.cache["genres"]
         cursor = self.db.execute(
             "SELECT * FROM genres AS root WHERE id IN (SELECT genre_id FROM books_genres WHERE book_id = %(id)s)",
             {"id": self.id},
         )
-        results = {r[0]: r[1] for r in cursor.fetchall()}
+        results = [
+            GenreRecord(self.db, "genres", self.orm, *r) for r in cursor.fetchall()
+        ]
+        self.cache["genres"] = results
         cursor.close()
         return results
 
     @property
     def authors(self) -> list[ContributorRecord]:
+        if self.cache["authors"] != None:
+            return self.cache["authors"]
+
         cursor = self.db.execute(
             "SELECT * FROM contributors AS root WHERE id IN (SELECT contributor_id FROM books_authors WHERE book_id = %(id)s)",
             {"id": self.id},
@@ -142,11 +248,15 @@ class BookRecord(Record):
             ContributorRecord(self.db, "contributors", self.orm, "author", *r)
             for r in cursor.fetchall()
         ]
+        self.cache["authors"] = results
         cursor.close()
         return results
 
     @property
     def editors(self) -> list[ContributorRecord]:
+        if self.cache["editors"] != None:
+            return self.cache["editors"]
+        
         cursor = self.db.execute(
             "SELECT * FROM contributors AS root WHERE id IN (SELECT contributor_id FROM books_editors WHERE book_id = %(id)s)",
             {"id": self.id},
@@ -155,11 +265,15 @@ class BookRecord(Record):
             ContributorRecord(self.db, "contributors", self.orm, "editor", *r)
             for r in cursor.fetchall()
         ]
+        self.cache["editors"] = results
         cursor.close()
         return results
 
     @property
     def publishers(self) -> list[ContributorRecord]:
+        if self.cache["publishers"] != None:
+            return self.cache["publishers"]
+        
         cursor = self.db.execute(
             "SELECT * FROM contributors AS root WHERE id IN (SELECT contributor_id FROM books_publishers WHERE book_id = %(id)s)",
             {"id": self.id},
@@ -168,13 +282,78 @@ class BookRecord(Record):
             ContributorRecord(self.db, "contributors", self.orm, "publisher", *r)
             for r in cursor.fetchall()
         ]
+        self.cache["publishers"] = results
         cursor.close()
         return results
+    
+    # Build from search results
 
     @classmethod
-    def search(
+    def _from_search(
         cls,
+        db: Connection,
+        table: str,
         orm: ORM,
+        id: int,
+        title: str,
+        length: int,
+        edition: str,
+        release_dt: datetime,
+        isbn: int,
+        genres: str,
+        genres_names: str,
+        audiences: str,
+        audiences_names: str,
+        publishers: str,
+        publishers_names: str,
+        authors: str,
+        authors_names: str,
+        editors: str,
+        editors_names: str
+    ):
+        genre_records = [
+            GenreRecord(db, "genres", orm, int(i.split(":")[0]), i.split(":")[1])
+            for i in list(set(genres.split("|")))
+        ] if genres else []
+        audience_records = [
+            AudienceRecord(db, "audiences", orm, int(i.split(":")[0]), i.split(":")[1])
+            for i in list(set(audiences.split("|")))
+        ] if audiences else []
+        publisher_records = [
+            ContributorRecord(db, "contributors", orm, "publisher", int(i.split(":")[0]), None, i.split(":")[1])
+            for i in list(set(publishers.split("|")))
+        ] if publishers else []
+        author_records = [
+            ContributorRecord(db, "contributors", orm, "author", int(i.split(":")[0]), i.split(":")[1], i.split(":")[2])
+            for i in list(set(authors.split("|")))
+        ] if authors else []
+        editor_records = [
+            ContributorRecord(db, "contributors", orm, "editor", int(i.split(":")[0]), i.split(":")[1], i.split(":")[2])
+            for i in list(set(editors.split("|")))
+        ] if editors else []
+        return BookRecord(
+            db,
+            table,
+            orm,
+            id,
+            title,
+            length,
+            edition,
+            release_dt,
+            isbn,
+            _audiences=audience_records,
+            _genres=genre_records,
+            _publishers=publisher_records,
+            _authors=author_records,
+            _editors=editor_records
+        )
+
+    # Search with fields
+    @classmethod
+    def search(
+        self,
+        orm: ORM,
+        pagination: PaginationParams,
         title: Optional[str] = None,
         min_length: Optional[int] = None,
         max_length: Optional[int] = None,
@@ -183,22 +362,22 @@ class BookRecord(Record):
         released_before: Optional[datetime] = None,
         isbn: Optional[int] = None,
         author_name: Optional[str] = None,
+        publisher_name: Optional[str] = None,
         genre: Optional[str] = None,
         audience: Optional[str] = None,
-        pagination: Optional[PaginationParams] = {},
     ) -> SearchResult:
         fields = []
         if title != None:
             fields.append(
                 SearchCondition(
-                    "title ilike %s OR title ilike %s",
-                    ["%%" + title + "%%", "%%" + "%%".join(list(title)) + "%%"],
+                    "title ilike %s",
+                    ["%%" + title + "%%"],
                 )
             )
         if min_length != None:
             fields.append(SearchCondition("length >= %s", [min_length]))
         if max_length != None:
-            fields.append(SearchCondition("lengtth <= %s", [max_length]))
+            fields.append(SearchCondition("length <= %s", [max_length]))
         if edition != None:
             fields.append(SearchCondition("edition ilike %s", ["%%" + edition + "%%"]))
         if released_after != None:
@@ -210,7 +389,7 @@ class BookRecord(Record):
         if author_name != None:
             fields.append(
                 SearchCondition(
-                    "id IN (SELECT book_id FROM books_authors AS aus WHERE contributor_id IN (SELECT id FROM contributors WHERE name_last_company ilike %s OR name_first ilike %s OR name_first || ' ' || name_last_company ilike %s))",
+                    "books.id IN (SELECT book_id FROM books_authors AS aus WHERE contributor_id IN (SELECT contributors.id FROM contributors WHERE name_last_company ilike %s OR name_first ilike %s OR name_first || ' ' || name_last_company ilike %s))",
                     [
                         "%%" + author_name + "%%",
                         "%%" + author_name + "%%",
@@ -221,7 +400,7 @@ class BookRecord(Record):
         if genre != None:
             fields.append(
                 SearchCondition(
-                    "id IN (SELECT book_id FROM books_genres AS ges WHERE genre_id IN (SELECT id FROM genres WHERE name ilike %s))",
+                    "books.id IN (SELECT book_id FROM books_genres AS ges WHERE genre_id IN (SELECT genres.id FROM genres WHERE name ilike %s))",
                     ["%%" + genre + "%%"],
                 )
             )
@@ -229,17 +408,28 @@ class BookRecord(Record):
         if audience != None:
             fields.append(
                 SearchCondition(
-                    "id IN (SELECT book_id FROM books_audiences AS ges WHERE audience_id IN (SELECT id FROM audiences WHERE name ilike %s))",
+                    "books.id IN (SELECT book_id FROM books_audiences AS aud WHERE audience_id IN (SELECT audiences.id FROM audiences WHERE name ilike %s))",
                     ["%%" + audience + "%%"],
+                )
+            )
+        if author_name != None:
+            fields.append(
+                SearchCondition(
+                    "books.id IN (SELECT book_id FROM books_publishers AS pubs WHERE contributor_id IN (SELECT contributors.id FROM contributors WHERE name_last_company ilike %s))",
+                    [
+                        "%%" + publisher_name + "%%",
+                    ],
                 )
             )
 
         return search_internal(
             orm,
             "books",
-            BookRecord,
+            BookRecord._from_search,
             fields,
             pagination.get("order") if pagination else None,
             pagination.get("offset") if pagination else None,
             pagination.get("limit") if pagination else None,
+            format_query=BOOK_FMT,
+            format_count_query=BOOK_FMT_COUNT
         )

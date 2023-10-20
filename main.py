@@ -19,6 +19,7 @@ class BooksApp(App):
         os.path.join("styles", "self.panel.tcss"),
         os.path.join("styles", "books.panel.tcss"),
         os.path.join("styles", "users.panel.tcss"),
+        os.path.join("styles", "pagination.util.tcss"),
     ]
 
     # Dont use the command palette

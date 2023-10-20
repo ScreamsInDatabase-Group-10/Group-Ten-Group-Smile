@@ -5,7 +5,6 @@ from sshtunnel import SSHTunnelForwarder
 from os import getenv, environ
 from typing import Optional, Literal
 from .orm import ORM
-from .search import search_internal, SearchCondition
 from app_types import *
 from datetime import datetime
 from time import time
