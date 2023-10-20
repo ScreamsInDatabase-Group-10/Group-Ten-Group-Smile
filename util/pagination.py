@@ -104,12 +104,12 @@ class PaginatedTable(ContextWidget):
         self.lock = True
         table = self.query_one(".paginated-table", expect_type=DataTable)
         table.clear(columns=True)
-        table.add_columns(*self.get_column_sorts())
         result = self.result_factory.search(
             self.context.orm, self.pagination, **self.params
         )
         self.total = result.total
         self.data = result.results
+        table.add_columns(*self.get_column_sorts())
         self.render_rows()
         self.calculate_page_status()
         self.query_one(".paginated-table", expect_type=DataTable).refresh()
