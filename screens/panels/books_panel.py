@@ -19,7 +19,7 @@ class BooksPanel(ContextWidget):
             PaginatedTable(
                 BookRecord,
                 [
-                    {"key": "id", "name": "Book Id", "render": lambda id: str(id)},
+                    {"key": "id", "name": "Book Id", "render": lambda id: str(id), "sort_by": "id"},
                     {
                         "key": "title",
                         "name": "Title",
@@ -29,11 +29,13 @@ class BooksPanel(ContextWidget):
                         .replace("<i>", "[italic]")
                         .replace("<\\i>", "[/italic]")
                         .replace("\\", ""),
+                        "sort_by": "title"
                     },
                     {
                         "key": "length",
                         "name": "Number of Pages",
                         "render": lambda length: str(length),
+                        "sort_by": "length"
                     },
                     {
                         "key": "edition",
@@ -41,17 +43,28 @@ class BooksPanel(ContextWidget):
                         "render": lambda edition: edition
                         if edition
                         else "Not Specified",
+                        "sort_by": "edition"
                     },
                     {
                         "key": "release_dt",
                         "name": "Release Date",
                         "render": lambda release: release.strftime("%b %d, %Y"),
+                        "sort_by": "release_dt"
                     },
-                    {"key": "isbn", "name": "ISBN", "render": lambda isbn: str(isbn)},
+                    {"key": "isbn", "name": "ISBN", "render": lambda isbn: str(isbn), "sort_by": "isbn"},
                     {
                         "key": "authors",
                         "name": "Authors",
                         "render": lambda authors: ", ".join([a.name for a in authors]),
+                        "sort_by": "authors_names_only"
+                    },
+                    {
+                        "key": "editors",
+                        "name": "Editors",
+                        "render": lambda editors: ", ".join(
+                            [e.name for e in editors]
+                        ),
+                        "sort_by": "editors_names_only"
                     },
                     {
                         "key": "publishers",
@@ -59,6 +72,7 @@ class BooksPanel(ContextWidget):
                         "render": lambda publishers: ", ".join(
                             [p.name for p in publishers]
                         ),
+                        "sort_by": "publishers_names_only"
                     },
                     {
                         "key": "genres",
@@ -66,6 +80,7 @@ class BooksPanel(ContextWidget):
                         "render": lambda genres: ", ".join(
                             list(set([g.name for g in genres]))
                         ),
+                        "sort_by": "genres_names_only"
                     },
                     {
                         "key": "audiences",
@@ -73,6 +88,7 @@ class BooksPanel(ContextWidget):
                         "render": lambda audiences: ", ".join(
                             list(set([a.name for a in audiences]))
                         ),
+                        "sort_by": "audiences_names_only"
                     },
                 ],
                 id="book-results-section",

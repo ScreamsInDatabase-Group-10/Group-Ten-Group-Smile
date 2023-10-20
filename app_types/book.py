@@ -19,11 +19,26 @@ SELECT
 		books.release_dt as release_dt, 
 		books.isbn as isbn, 
 		string_agg(genres.id || ':' || genres.name, '|') as genres,
-		string_agg(audiences.id || ':' || audiences.name, '|') as audiences FROM {table}
-	INNER JOIN books_genres ON books_genres.book_id = books.id
-	INNER JOIN genres ON books_genres.genre_id = genres.id
-	INNER JOIN books_audiences ON books_audiences.book_id = books.id
-	INNER JOIN audiences ON books_audiences.audience_id = audiences.id
+		string_agg(genres.name, '|') as genres_names_only,
+		string_agg(audiences.id || ':' || audiences.name, '|') as audiences,
+		string_agg(audiences.name, '|') as audiences_names_only,
+		string_agg(contrib_publishers.id || ':' || contrib_publishers.name_last_company, '|') as publishers,
+		string_agg(contrib_publishers.name_last_company, '|') as publishers_names_only,
+		string_agg(contrib_authors.id || ':' || contrib_authors.name_first || ':' || contrib_authors.name_last_company, '|') as authors,
+		string_agg(contrib_authors.name_first || ' ' || contrib_authors.name_last_company, '|') as authors_names_only,
+		string_agg(contrib_editors.id || ':' || contrib_editors.name_first || ':' || contrib_editors.name_last_company, '|') as editors,
+		string_agg(contrib_editors.name_first || ' ' || contrib_editors.name_last_company, '|') as editors_names_only
+	FROM {table}
+	LEFT JOIN books_genres ON books_genres.book_id = books.id
+	LEFT JOIN genres ON books_genres.genre_id = genres.id
+	LEFT JOIN books_audiences ON books_audiences.book_id = books.id
+	LEFT JOIN audiences ON books_audiences.audience_id = audiences.id
+	LEFT JOIN books_publishers ON books_publishers.book_id = books.id
+	LEFT JOIN contributors AS contrib_publishers ON books_publishers.contributor_id = contrib_publishers.id
+	LEFT JOIN books_authors ON books_authors.book_id = books.id
+	LEFT JOIN contributors AS contrib_authors ON books_authors.contributor_id = contrib_authors.id
+	LEFT JOIN books_editors ON books_editors.book_id = books.id
+	LEFT JOIN contributors AS contrib_editors ON books_editors.contributor_id = contrib_editors.id
 	{conditions}
 	GROUP BY books.id
 	{order}
@@ -263,15 +278,30 @@ class BookRecord(Record):
         isbn: int,
         genres: str,
         audiences: str,
+        publishers: str,
+        authors: str,
+        editors: str
     ):
         genre_records = [
             GenreRecord(db, "genres", orm, int(i.split(":")[0]), i.split(":")[1])
-            for i in genres.split("|")
-        ]
+            for i in list(set(genres.split("|")))
+        ] if genres else []
         audience_records = [
             AudienceRecord(db, "audiences", orm, int(i.split(":")[0]), i.split(":")[1])
-            for i in audiences.split("|")
-        ]
+            for i in list(set(audiences.split("|")))
+        ] if audiences else []
+        publisher_records = [
+            ContributorRecord(db, "contributors", orm, "publisher", int(i.split(":")[0]), None, i.split(":")[1])
+            for i in list(set(publishers.split("|")))
+        ] if publishers else []
+        author_records = [
+            ContributorRecord(db, "contributors", orm, "author", int(i.split(":")[0]), i.split(":")[1], i.split(":")[2])
+            for i in list(set(authors.split("|")))
+        ] if authors else []
+        editor_records = [
+            ContributorRecord(db, "contributors", orm, "editor", int(i.split(":")[0]), i.split(":")[1], i.split(":")[2])
+            for i in list(set(editors.split("|")))
+        ] if editors else []
         return BookRecord(
             db,
             table,
@@ -284,6 +314,9 @@ class BookRecord(Record):
             isbn,
             _audiences=audience_records,
             _genres=genre_records,
+            _publishers=publisher_records,
+            _authors=author_records,
+            _editors=editor_records
         )
 
     @classmethod

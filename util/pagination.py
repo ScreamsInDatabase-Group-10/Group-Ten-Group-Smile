@@ -7,7 +7,7 @@ from textual.reactive import reactive
 from textual import work, on
 from textual.coordinate import Coordinate
 from .orm import Record, SearchResult, PaginationParams
-from typing import Any, Callable, Coroutine, Union
+from typing import Any, Callable, Union, Optional
 from typing_extensions import TypedDict
 from rich.console import RenderableType
 from threading import Thread
@@ -18,6 +18,7 @@ class PaginatedColumn(TypedDict):
     key: str
     name: str
     render: Callable[[Any], RenderableType]
+    sort_by: Optional[str]
 
 
 class PaginatedTable(ContextWidget):
