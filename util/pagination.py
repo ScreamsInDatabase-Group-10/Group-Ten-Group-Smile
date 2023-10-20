@@ -52,6 +52,7 @@ class PaginatedTable(ContextWidget):
         self.result_factory = factory
         self.data = []
         self.columns = columns
+        self.default_pagination = initial_pagination
         self.pagination = initial_pagination
         self.params = initial_params
         self.total = initial_total
@@ -133,7 +134,6 @@ class PaginatedTable(ContextWidget):
                 ),
                 classes="pagination-controls",
             ),
-            id=self.id,
             classes=" ".join(self.classes) + " pagination-root",
         )
 
@@ -206,5 +206,10 @@ class PaginatedTable(ContextWidget):
             else:
                 new_columns.append(self.columns[c]["name"])
         return new_columns
+    
+    def search(self, params: dict[str, Any]):
+        self.pagination = self.default_pagination.copy()
+        self.params = params
+        self.update_data()
                     
             

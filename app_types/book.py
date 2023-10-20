@@ -46,6 +46,23 @@ SELECT
     {limit}
 """
 
+BOOK_FMT_COUNT = """
+SELECT 
+		COUNT(books.id)
+	FROM {table}
+	LEFT JOIN books_genres ON books_genres.book_id = books.id
+	LEFT JOIN genres ON books_genres.genre_id = genres.id
+	LEFT JOIN books_audiences ON books_audiences.book_id = books.id
+	LEFT JOIN audiences ON books_audiences.audience_id = audiences.id
+	LEFT JOIN books_publishers ON books_publishers.book_id = books.id
+	LEFT JOIN contributors AS contrib_publishers ON books_publishers.contributor_id = contrib_publishers.id
+	LEFT JOIN books_authors ON books_authors.book_id = books.id
+	LEFT JOIN contributors AS contrib_authors ON books_authors.contributor_id = contrib_authors.id
+	LEFT JOIN books_editors ON books_editors.book_id = books.id
+	LEFT JOIN contributors AS contrib_editors ON books_editors.contributor_id = contrib_editors.id
+	{conditions}
+"""
+
 
 class AudienceRecord(Record):
     def __init__(
@@ -367,7 +384,7 @@ class BookRecord(Record):
         if author_name != None:
             fields.append(
                 SearchCondition(
-                    "id IN (SELECT book_id FROM books_authors AS aus WHERE contributor_id IN (SELECT id FROM contributors WHERE name_last_company ilike %s OR name_first ilike %s OR name_first || ' ' || name_last_company ilike %s))",
+                    "books.id IN (SELECT book_id FROM books_authors AS aus WHERE contributor_id IN (SELECT contributors.id FROM contributors WHERE name_last_company ilike %s OR name_first ilike %s OR name_first || ' ' || name_last_company ilike %s))",
                     [
                         "%%" + author_name + "%%",
                         "%%" + author_name + "%%",
@@ -378,7 +395,7 @@ class BookRecord(Record):
         if genre != None:
             fields.append(
                 SearchCondition(
-                    "id IN (SELECT book_id FROM books_genres AS ges WHERE genre_id IN (SELECT id FROM genres WHERE name ilike %s))",
+                    "books.id IN (SELECT book_id FROM books_genres AS ges WHERE genre_id IN (SELECT genres.id FROM genres WHERE name ilike %s))",
                     ["%%" + genre + "%%"],
                 )
             )
@@ -386,14 +403,14 @@ class BookRecord(Record):
         if audience != None:
             fields.append(
                 SearchCondition(
-                    "id IN (SELECT book_id FROM books_audiences AS aud WHERE audience_id IN (SELECT id FROM audiences WHERE name ilike %s))",
+                    "books.id IN (SELECT book_id FROM books_audiences AS aud WHERE audience_id IN (SELECT audiences.id FROM audiences WHERE name ilike %s))",
                     ["%%" + audience + "%%"],
                 )
             )
         if author_name != None:
             fields.append(
                 SearchCondition(
-                    "id IN (SELECT book_id FROM books_publishers AS pubs WHERE contributor_id IN (SELECT id FROM contributors WHERE name_last_company ilike %s))",
+                    "books.id IN (SELECT book_id FROM books_publishers AS pubs WHERE contributor_id IN (SELECT contributors.id FROM contributors WHERE name_last_company ilike %s))",
                     [
                         "%%" + publisher_name + "%%",
                     ],
@@ -409,4 +426,5 @@ class BookRecord(Record):
             pagination.get("offset") if pagination else None,
             pagination.get("limit") if pagination else None,
             format_query=BOOK_FMT,
+            format_count_query=BOOK_FMT_COUNT
         )

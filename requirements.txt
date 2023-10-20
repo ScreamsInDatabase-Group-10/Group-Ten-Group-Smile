@@ -5,3 +5,4 @@ typing-extensions
 rich
 textual
 textual-dev
+python-dateutil

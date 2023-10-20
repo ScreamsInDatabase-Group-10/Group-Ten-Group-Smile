@@ -41,7 +41,8 @@ def search_internal(
     order: Optional[ORDER_PARAM] = None,
     offset: Optional[int] = None,
     limit: Optional[int] = None,
-    format_query: str = "SELECT * FROM {table} AS root{conditions}{order}{offset}{limit}"
+    format_query: str = "SELECT * FROM {table} AS root{conditions}{order}{offset}{limit}",
+    format_count_query: str = "SELECT COUNT(*) FROM {table} AS root{conditions}"
 ) -> SearchResult:
     """Does the actual searching part (querying, result count, etc)
 
@@ -70,7 +71,7 @@ def search_internal(
         limit=" LIMIT " + str(limit) if limit != None else "",
     )
 
-    assembled_count = "SELECT COUNT(*) FROM {table} AS root{conditions}".format(
+    assembled_count = format_count_query.format(
         table=table,
         conditions=" WHERE " + " AND ".join([c.condition for c in conditions])
         if len(conditions) > 0
@@ -82,7 +83,7 @@ def search_internal(
 
     cursor = orm.db.execute(assembled, fields)
     cursor_count = orm.db.execute(assembled_count, fields)
-    total_count = cursor_count.fetchone()[0]
+    total_count = cursor_count.fetchone()[0] if cursor_count.rowcount > 0 else 0
     results = [factory(orm.db, table, orm, *r) for r in cursor.fetchall()]
     cursor.close()
     cursor_count.close()
