@@ -186,7 +186,7 @@ class BookRecord(Record):
     # Return a list of AudienceRecord
     @property
     def audiences(self) -> list[AudienceRecord]:
-        if self.cache["audiences"]:
+        if self.cache["audiences"] != None:
             return self.cache["audiences"]
         cursor = self.db.execute(
             "SELECT * FROM audiences AS root WHERE id IN (SELECT audience_id FROM books_audiences WHERE book_id = %(id)s)",
@@ -203,7 +203,7 @@ class BookRecord(Record):
     # Return a list of GenreRecord
     @property
     def genres(self) -> list[GenreRecord]:
-        if self.cache["genres"]:
+        if self.cache["genres"] != None:
             return self.cache["genres"]
         cursor = self.db.execute(
             "SELECT * FROM genres AS root WHERE id IN (SELECT genre_id FROM books_genres WHERE book_id = %(id)s)",
@@ -218,8 +218,9 @@ class BookRecord(Record):
 
     @property
     def authors(self) -> list[ContributorRecord]:
-        if self.cache["authors"]:
+        if self.cache["authors"] != None:
             return self.cache["authors"]
+
         cursor = self.db.execute(
             "SELECT * FROM contributors AS root WHERE id IN (SELECT contributor_id FROM books_authors WHERE book_id = %(id)s)",
             {"id": self.id},
@@ -234,8 +235,9 @@ class BookRecord(Record):
 
     @property
     def editors(self) -> list[ContributorRecord]:
-        if self.cache["editors"]:
+        if self.cache["editors"] != None:
             return self.cache["editors"]
+        
         cursor = self.db.execute(
             "SELECT * FROM contributors AS root WHERE id IN (SELECT contributor_id FROM books_editors WHERE book_id = %(id)s)",
             {"id": self.id},
@@ -250,8 +252,9 @@ class BookRecord(Record):
 
     @property
     def publishers(self) -> list[ContributorRecord]:
-        if self.cache["publishers"]:
+        if self.cache["publishers"] != None:
             return self.cache["publishers"]
+        
         cursor = self.db.execute(
             "SELECT * FROM contributors AS root WHERE id IN (SELECT contributor_id FROM books_publishers WHERE book_id = %(id)s)",
             {"id": self.id},

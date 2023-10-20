@@ -56,6 +56,7 @@ class PaginatedTable(ContextWidget):
         self.params = initial_params
         self.total = initial_total
         self.calculate_page_status()
+        self.lock = False
 
     def calculate_page_status(self) -> None:
         page_size = self.pagination["limit"]
@@ -75,7 +76,7 @@ class PaginatedTable(ContextWidget):
         except:
             pass
 
-    def render_row(self, record: Record, row: int) -> None:
+    def render_row(self, record: Record, row: int, table: DataTable) -> None:
         rendered = []
         for c in self.columns:
             if hasattr(record, c["key"]):
@@ -85,38 +86,34 @@ class PaginatedTable(ContextWidget):
 
         self.rows[row] = rendered
 
-        for column in range(len(self.rows[row])):
-            self.query_one(".paginated-table", expect_type=DataTable).update_cell_at(
-                Coordinate(row, column), self.rows[row][column], update_width=True
-            )
+        table.add_row(*rendered)
 
     def render_rows(self):
         self.rows = [["" for column in self.columns] for record in self.data]
         table = self.query_one(".paginated-table", expect_type=DataTable)
         table.clear()
-        table.add_rows(self.rows)
         for row in range(len(self.data)):
-            Thread(target=self.render_row, args=[self.data[row], row]).start()
+            self.render_row(self.data[row], row, table)
 
     @work(exclusive=True, thread=True, group="pagination-update")
     def update_data(self):
         """Update data from current attrs"""
-        try:
-            self.query_one(".paginated-table").loading = True
-        except:
+        while self.lock:
             pass
+        
+        self.lock = True
+        table = self.query_one(".paginated-table", expect_type=DataTable)
+        table.clear(columns=True)
+        table.add_columns(*self.get_column_sorts())
         result = self.result_factory.search(
             self.context.orm, self.pagination, **self.params
         )
         self.total = result.total
         self.data = result.results
         self.render_rows()
-        self.loading = False
         self.calculate_page_status()
-        try:
-            self.query_one(".paginated-table").loading = False
-        except:
-            pass
+        self.query_one(".paginated-table", expect_type=DataTable).refresh()
+        self.lock = False
 
     def action_refresh(self):
         self.update_data()
@@ -144,7 +141,6 @@ class PaginatedTable(ContextWidget):
         table = self.query_one(".paginated-table", expect_type=DataTable)
         table.add_columns(*[c["name"] for c in self.columns])
         self.update_data()
-        self.update_column_sorts()
 
     @on(Button.Pressed, ".pagination-control-item.previous")
     def on_previous_pressed(self):
@@ -195,11 +191,9 @@ class PaginatedTable(ContextWidget):
                     del self.pagination["order"][cur_index]
             else:
                 self.pagination["order"].append([self.columns[event.column_index]["sort_by"], "ASC"])
-            self.update_column_sorts()
             self.update_data()
 
-    def update_column_sorts(self):
-        table = self.query_one(".paginated-table", expect_type=DataTable)
+    def get_column_sorts(self) -> list[str]:
         new_columns = []
         for c in range(len(self.columns)):
             if "sort_by" in self.columns[c].keys():
@@ -211,8 +205,6 @@ class PaginatedTable(ContextWidget):
                     new_columns.append("◆ " + self.columns[c]["name"])
             else:
                 new_columns.append(self.columns[c]["name"])
-        for k in list(table.columns.keys()):
-            table.remove_column(k)
-        table.add_columns(*new_columns)
+        return new_columns
                     
             

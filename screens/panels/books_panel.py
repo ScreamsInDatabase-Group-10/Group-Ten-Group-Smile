@@ -103,7 +103,7 @@ class BooksPanel(ContextWidget):
                 classes="panel-sections book-results",
                 initial_params={"min_length": 100},
                 initial_pagination={
-                    "limit": 50,
+                    "limit": 25,
                     "offset": 0,
                     "order": [
                         ["release_dt", "ASC"],
