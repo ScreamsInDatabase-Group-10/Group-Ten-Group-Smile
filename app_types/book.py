@@ -10,6 +10,8 @@ from util.orm import (
 from datetime import datetime
 from typing import Literal, Optional
 
+# Big query strings for searching
+
 BOOK_FMT = """
 SELECT 
 		books.id AS id, 
@@ -283,6 +285,8 @@ class BookRecord(Record):
         self.cache["publishers"] = results
         cursor.close()
         return results
+    
+    # Build from search results
 
     @classmethod
     def _from_search(
@@ -344,6 +348,7 @@ class BookRecord(Record):
             _editors=editor_records
         )
 
+    # Search with fields
     @classmethod
     def search(
         self,
