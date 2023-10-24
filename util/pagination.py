@@ -46,6 +46,19 @@ class PaginatedTable(ContextWidget):
         initial_params: dict[str, Any] = {},
         initial_total: int = 0,
     ) -> None:
+        """Paginated Table Class
+
+        Args:
+            factory (type[Record]): Record subclass to initialize
+            columns (list[PaginatedColumn]): List of PaginatedColumn instances
+            name (str | None, optional): Element name. Defaults to None.
+            id (str | None, optional): Element ID. Defaults to None.
+            classes (str | None, optional): Element class string. Defaults to None.
+            disabled (bool, optional): Element disabled. Defaults to False.
+            initial_pagination (_type_, optional): Initial pagination setup. Defaults to {"offset": 0, "limit": 25, "order": []}.
+            initial_params (dict[str, Any], optional): Initial search params. Defaults to {}.
+            initial_total (int, optional): Initial total results. Defaults to 0.
+        """
         super().__init__(
             *children, name=name, id=id, classes=classes, disabled=disabled
         )
@@ -208,6 +221,11 @@ class PaginatedTable(ContextWidget):
         return new_columns
     
     def search(self, params: dict[str, Any]):
+        """Update search params
+
+        Args:
+            params (dict[str, Any]): New search parameters
+        """
         self.pagination = self.default_pagination.copy()
         self.params = params
         self.update_data()
