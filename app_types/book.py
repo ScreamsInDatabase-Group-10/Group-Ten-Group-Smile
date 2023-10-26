@@ -29,7 +29,9 @@ SELECT
 		string_agg(contrib_authors.id || ':' || contrib_authors.name_first || ':' || contrib_authors.name_last_company, '|') as authors,
 		string_agg(contrib_authors.name_first || ' ' || contrib_authors.name_last_company, '|') as authors_names_only,
 		string_agg(contrib_editors.id || ':' || contrib_editors.name_first || ':' || contrib_editors.name_last_company, '|') as editors,
-		string_agg(contrib_editors.name_first || ' ' || contrib_editors.name_last_company, '|') as editors_names_only
+		string_agg(contrib_editors.name_first || ' ' || contrib_editors.name_last_company, '|') as editors_names_only,
+		string_agg(users_ratings.user_id || ':' || users_ratings.rating, '|') as ratings,
+		string_agg(users_sessions.session_id || ':' || users_sessions.book_id || ':' || users_sessions.user_id || ':' || users_sessions.start_datetime || ':' || users_sessions.end_datetime || ':' || users_sessions.start_page || ':' || users_sessions.end_page, '|') as sessions
 	FROM {table}
 	LEFT JOIN books_genres ON books_genres.book_id = books.id
 	LEFT JOIN genres ON books_genres.genre_id = genres.id
@@ -41,6 +43,8 @@ SELECT
 	LEFT JOIN contributors AS contrib_authors ON books_authors.contributor_id = contrib_authors.id
 	LEFT JOIN books_editors ON books_editors.book_id = books.id
 	LEFT JOIN contributors AS contrib_editors ON books_editors.contributor_id = contrib_editors.id
+	LEFT JOIN users_ratings ON users_ratings.book_id = books.id
+	LEFT JOIN users_sessions on users_sessions.book_id = books.id
 	{conditions}
 	GROUP BY books.id
 	{order}
@@ -62,6 +66,8 @@ SELECT
 	LEFT JOIN contributors AS contrib_authors ON books_authors.contributor_id = contrib_authors.id
 	LEFT JOIN books_editors ON books_editors.book_id = books.id
 	LEFT JOIN contributors AS contrib_editors ON books_editors.contributor_id = contrib_editors.id
+    LEFT JOIN users_ratings ON users_ratings.book_id = books.id
+	LEFT JOIN users_sessions on users_sessions.book_id = books.id
 	{conditions}
 """
 
@@ -146,6 +152,21 @@ class ContributorRecord(Record):
     def delete(self):
         self.db.execute("DELETE FROM " + self.table + " WHERE id = %s", (self.id,))
         self.db.commit()
+
+class SessionRecord(Record):
+    def __init__(self, db: Connection, table: str, orm: ORM, session_id: int, book_id: int, user_id: int, start_dt: datetime, end_dt: datetime, start_page: int, end_page: int) -> None:
+        super().__init__(db, table, orm)
+        self.session_id = session_id
+        self.book_id = book_id
+        self.user_id = user_id
+        self.start_dt = start_dt
+        self.end_dt = end_dt
+        self.start_page = start_page
+        self.end_page = end_page
+
+    @classmethod
+    def create(cls, user: int, book: int):
+        pass
 
 
 class BookRecord(Record):
