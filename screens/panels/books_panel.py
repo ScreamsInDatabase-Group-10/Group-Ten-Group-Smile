@@ -340,6 +340,7 @@ class BooksPanel(ContextWidget):
                         ["title", "ASC"],
                     ],
                 },
+                cursor_type="row"
             ),
             classes="panel books",
             id="app-panel-books",
@@ -384,3 +385,7 @@ class BooksPanel(ContextWidget):
             del self.fields["title"]
         else:
             self.fields["title"] = event.value
+
+    @on(PaginatedTable.CursorEvent)
+    def on_row_highlight(self, event: PaginatedTable.CursorEvent):
+        print(event.value)
