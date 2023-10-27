@@ -66,3 +66,40 @@
 #button-search {
     dock: right;
 }
+
+#book-actions-modal {
+    align: center middle;
+}
+
+#book-actions-divider {
+    width: 75%;
+    height: 45;
+    grid-size: 1 10;
+    padding: 1 3;
+    padding-bottom: 0;
+}
+
+#actions-title {
+    column-span: 1;
+    content-align: center middle;
+}
+
+#book-actions-divider .modal-section {
+    column-span: 1;
+    row-span: 8;
+    grid-gutter: 1 1;
+}
+
+#book-actions-divider .modal-section .section-title {
+    column-span: 3;
+    content-align: center middle;
+}
+
+#modal-section-sessions {
+    grid-size: 3 6;
+}
+
+#create-session {
+    width: 100%;
+    column-span: 3;
+}
