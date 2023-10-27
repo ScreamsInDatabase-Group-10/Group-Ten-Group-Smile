@@ -268,7 +268,7 @@ class ORM:
             for i in cursor.fetchall()
         ]
 
-    def next_available_id(self, table: TABLE_NAMES) -> int:
+    def next_available_id(self, table: TABLE_NAMES, col="id") -> int:
         """Returns the next available ID in the table. 
                 This is not assumed to be safe for more than 1 client, 
                 we just aren't using serial IDs so this was a quick hack around it
@@ -279,4 +279,4 @@ class ORM:
         Returns:
             int: Next available ID.
         """
-        return self.db.execute("SELECT MAX(id) FROM " + table).fetchone()[0] + 1
+        return self.db.execute("SELECT MAX(" + col + ") FROM " + table).fetchone()[0] + 1
