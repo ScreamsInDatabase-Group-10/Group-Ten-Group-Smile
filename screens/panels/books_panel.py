@@ -322,6 +322,12 @@ class BooksPanel(ContextWidget):
                         ),
                         "sort_by": "audiences_names_only",
                     },
+                    {
+                        "key": "avg_rating",
+                        "name": "Average Rating",
+                        "render": lambda rating: str(rating),
+                        "sort_by": "avg_rating",
+                    },
                 ],
                 id="book-results-section",
                 classes="panel-sections book-results",
