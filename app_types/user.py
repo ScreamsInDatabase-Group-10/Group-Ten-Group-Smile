@@ -152,11 +152,15 @@ class UserRecord(Record):
         if id != None:
             fields.append(SearchCondition("id = %s", [id]))
         if name_first != None:
-            fields.append(SearchCondition("name_first ilike %s", [name_first]))
+            fields.append(
+                SearchCondition("name_first ilike %s", ["%%" + name_first + "%%"])
+            )
         if name_last != None:
-            fields.append(SearchCondition("name_last ilike %s", [name_last]))
+            fields.append(
+                SearchCondition("name_last ilike %s", ["%%" + name_last + "%%"])
+            )
         if email != None:
-            fields.append(SearchCondition("email ilike %s", [email]))
+            fields.append(SearchCondition("email ilike %s", ["%%" + email + "%%"]))
 
         results = search_internal(
             orm,
