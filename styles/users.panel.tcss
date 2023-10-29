@@ -8,7 +8,7 @@
     height: 10fr;
 }
 
-#user-search-section #search-main {
+#user-search-section #user-search-main {
     width: 8fr;
 }
 
