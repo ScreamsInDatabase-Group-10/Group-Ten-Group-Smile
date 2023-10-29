@@ -104,7 +104,7 @@ class UsersPanel(ContextWidget):
         super().__init__(
             *children, name=name, id=id, classes=classes, disabled=disabled
         )
-        self.fields = SearchFields = {}
+        self.fields: SearchFields = {}
 
     def compose(self) -> ComposeResult:
         yield Container(
@@ -139,7 +139,7 @@ class UsersPanel(ContextWidget):
                     {
                         "key": "creation_dt",
                         "name": "Creation Date",
-                        "render": lambda dt: dt,
+                        "render": lambda dt: dt.strftime("%b %d, %Y"),
                     },
                     {
                         "key": "email",

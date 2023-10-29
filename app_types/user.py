@@ -17,9 +17,9 @@ SELECT
         users.name_first as name_first,
         users.name_last as name_last,
         users.email as email,
-        users.password as password,
         users.creation_dt as creation_dt,
-        users.access_dt as access_dt
+        users.access_dt as access_dt,
+        users.password as password
     FROM {table}
     {conditions}
     {order}
