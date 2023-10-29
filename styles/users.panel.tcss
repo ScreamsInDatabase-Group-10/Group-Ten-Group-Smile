@@ -5,5 +5,64 @@
 }
 
 #user-results-section {
-    height: 7fr;
+    height: 10fr;
+}
+
+#user-search-section #search-main {
+    width: 8fr;
+}
+
+#user-search-section Button {
+    width: 1fr;
+    margin: 0 1;
+}
+
+#advanced-search-modal-container {
+    width: 75%;
+    height: 45;
+    padding: 1 3;
+    grid-size: 3 11;
+    grid-gutter: 1 1;
+}
+
+.advanced-search-modal {
+    align: center middle;
+}
+
+#advanced-title {
+    column-span: 3;
+    content-align: center middle;
+    padding-top: 1;
+}
+
+.input-label {
+    column-span: 1;
+    align: center middle;
+    height: 100%;
+}
+
+.input-label > * {
+    width: auto;
+}
+
+.input-field {
+    column-span: 2;
+    height: 100%;
+}
+
+.input-field.small {
+    column-span: 1;
+}
+
+#advanced-controls {
+    column-span: 3;
+    layout: horizontal;
+}
+
+#button-cancel {
+    dock: left;
+}
+
+#button-search {
+    dock: right;
 }
