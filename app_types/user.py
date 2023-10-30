@@ -115,7 +115,8 @@ class CollectionRecord(Record):
         self.db.execute(
             "UPDATE "
             + self.table
-            + "SET NAME = %s WHERE ID = %s"(
+            + "SET NAME = %s WHERE ID = %s",
+            (
                 self.name,
                 self.id
             )
