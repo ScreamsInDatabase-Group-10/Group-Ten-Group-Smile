@@ -9,8 +9,10 @@ class SelfPanel(ContextWidget):
         yield Container(
             Static("Email: " + user.email + " Name: " + user.name_first + " " + user.name_last + "\nDate Created: " + user.creation_dt.strftime('%b %d %Y')
                    , id="user-info-section", classes="panel-sections user-info"),
-            ListView(
-                *[ListItem(Static(c.name)) for c in user.collections()]
+            Container(
+                ListView(
+                    *[ListItem(Static(c.name)) for c in user.collections()]
+                )
             ),
             Placeholder("Connections", id="connections-section", classes="panel-sections connections"),
             classes="panel self",
