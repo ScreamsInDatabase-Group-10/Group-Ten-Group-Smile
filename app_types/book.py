@@ -20,16 +20,18 @@ SELECT
 		books.edition as edition, 
 		books.release_dt as release_dt, 
 		books.isbn as isbn, 
-		string_agg(genres.id || ':' || genres.name, '|') as genres,
-		string_agg(genres.name, '|') as genres_names_only,
-		string_agg(audiences.id || ':' || audiences.name, '|') as audiences,
-		string_agg(audiences.name, '|') as audiences_names_only,
-		string_agg(contrib_publishers.id || ':' || contrib_publishers.name_last_company, '|') as publishers,
-		string_agg(contrib_publishers.name_last_company, '|') as publishers_names_only,
-		string_agg(contrib_authors.id || ':' || contrib_authors.name_first || ':' || contrib_authors.name_last_company, '|') as authors,
-		string_agg(contrib_authors.name_first || ' ' || contrib_authors.name_last_company, '|') as authors_names_only,
-		string_agg(contrib_editors.id || ':' || contrib_editors.name_first || ':' || contrib_editors.name_last_company, '|') as editors,
-		string_agg(contrib_editors.name_first || ' ' || contrib_editors.name_last_company, '|') as editors_names_only
+		string_agg(distinct genres.id || ':' || genres.name, '|') as genres,
+		string_agg(distinct genres.name, '|') as genres_names_only,
+		string_agg(distinct audiences.id || ':' || audiences.name, '|') as audiences,
+		string_agg(distinct audiences.name, '|') as audiences_names_only,
+		string_agg(distinct contrib_publishers.id || ':' || contrib_publishers.name_last_company, '|') as publishers,
+		string_agg(distinct contrib_publishers.name_last_company, '|') as publishers_names_only,
+		string_agg(distinct contrib_authors.id || ':' || contrib_authors.name_first || ':' || contrib_authors.name_last_company, '|') as authors,
+		string_agg(distinct contrib_authors.name_first || ' ' || contrib_authors.name_last_company, '|') as authors_names_only,
+		string_agg(distinct contrib_editors.id || ':' || contrib_editors.name_first || ':' || contrib_editors.name_last_company, '|') as editors,
+		string_agg(distinct contrib_editors.name_first || ' ' || contrib_editors.name_last_company, '|') as editors_names_only,
+		string_agg(distinct users_ratings.user_id || ':' || users_ratings.rating, '|') as ratings,
+        AVG(users_ratings.rating) as avg_rating
 	FROM {table}
 	LEFT JOIN books_genres ON books_genres.book_id = books.id
 	LEFT JOIN genres ON books_genres.genre_id = genres.id
@@ -41,6 +43,7 @@ SELECT
 	LEFT JOIN contributors AS contrib_authors ON books_authors.contributor_id = contrib_authors.id
 	LEFT JOIN books_editors ON books_editors.book_id = books.id
 	LEFT JOIN contributors AS contrib_editors ON books_editors.contributor_id = contrib_editors.id
+	LEFT JOIN users_ratings ON users_ratings.book_id = books.id
 	{conditions}
 	GROUP BY books.id
 	{order}
@@ -62,6 +65,7 @@ SELECT
 	LEFT JOIN contributors AS contrib_authors ON books_authors.contributor_id = contrib_authors.id
 	LEFT JOIN books_editors ON books_editors.book_id = books.id
 	LEFT JOIN contributors AS contrib_editors ON books_editors.contributor_id = contrib_editors.id
+    LEFT JOIN users_ratings ON users_ratings.book_id = books.id
 	{conditions}
 """
 
@@ -147,6 +151,27 @@ class ContributorRecord(Record):
         self.db.execute("DELETE FROM " + self.table + " WHERE id = %s", (self.id,))
         self.db.commit()
 
+class SessionRecord(Record):
+    def __init__(self, db: Connection, table: str, orm: ORM, session_id: int, book_id: int, user_id: int, start_dt: datetime, end_dt: datetime, start_page: int, end_page: int) -> None:
+        super().__init__(db, table, orm)
+        self.session_id = session_id
+        self.book_id = book_id
+        self.user_id = user_id
+        self.start_dt = start_dt
+        self.end_dt = end_dt
+        self.start_page = start_page
+        self.end_page = end_page
+
+    @classmethod
+    def create(cls, user: int, book: int):
+        pass
+
+class RatingRecord(Record):
+    def __init__(self, db: Connection, table: str, orm: ORM, user_id: int, rating: int) -> None:
+        super().__init__(db, table, orm)
+        self.user_id = user_id
+        self.rating = rating
+
 
 class BookRecord(Record):
     def __init__(
@@ -166,6 +191,7 @@ class BookRecord(Record):
         _publishers: list[ContributorRecord] = None,
         _audiences: list[AudienceRecord] = None,
         _genres: list[GenreRecord] = None,
+        _ratings: list[RatingRecord] = None
     ) -> None:
         super().__init__(db, table, orm)
         self.id = id
@@ -180,6 +206,7 @@ class BookRecord(Record):
             "publishers": _publishers,
             "audiences": _audiences,
             "genres": _genres,
+            "ratings": _ratings
         }
 
     def save(self):
@@ -286,6 +313,34 @@ class BookRecord(Record):
         cursor.close()
         return results
     
+    @property
+    def ratings(self) -> list[RatingRecord]:
+        if self.cache["ratings"] != None:
+            return self.cache["ratings"]
+        
+        cursor = self.db.execute(
+            "SELECT user_id, rating FROM users_ratings WHERE book_id = %(id)s",
+            {"id": self.id},
+        )
+        results = [
+            RatingRecord(self.db, "users_ratings", self.orm, *r)
+            for r in cursor.fetchall()
+        ]
+        self.cache["ratings"] = results
+        cursor.close()
+        return results
+    
+    @property
+    def avg_rating(self) -> float:
+        if self.cache["ratings"]:
+            ratings = self.ratings
+            return round(sum([r.rating for r in ratings]) / len(ratings), 2)
+        else:
+            cursor = self.db.execute("SELECT AVG(rating) FROM users_ratings WHERE book_id = %s", [self.id])
+            result = cursor.fetchone()[0]
+            cursor.close()
+            return round(result, 2)
+    
     # Build from search results
 
     @classmethod
@@ -309,7 +364,9 @@ class BookRecord(Record):
         authors: str,
         authors_names: str,
         editors: str,
-        editors_names: str
+        editors_names: str,
+        ratings: str,
+        *args
     ):
         genre_records = [
             GenreRecord(db, "genres", orm, int(i.split(":")[0]), i.split(":")[1])
@@ -331,6 +388,10 @@ class BookRecord(Record):
             ContributorRecord(db, "contributors", orm, "editor", int(i.split(":")[0]), i.split(":")[1], i.split(":")[2])
             for i in list(set(editors.split("|")))
         ] if editors else []
+        rating_records = [
+            RatingRecord(db, "users_ratings", orm, int(i.split(":")[0]), int(i.split(":")[1]))
+            for i in list(set(ratings.split("|")))
+        ] if ratings else []
         return BookRecord(
             db,
             table,
@@ -345,7 +406,8 @@ class BookRecord(Record):
             _genres=genre_records,
             _publishers=publisher_records,
             _authors=author_records,
-            _editors=editor_records
+            _editors=editor_records,
+            _ratings=rating_records
         )
 
     # Search with fields

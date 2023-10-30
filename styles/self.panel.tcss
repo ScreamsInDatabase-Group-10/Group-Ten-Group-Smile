@@ -6,6 +6,7 @@
 
 #user-info-section {
     column-span: 4;
+    content-align: center middle;
 }
 
 #collections-section {

@@ -6,6 +6,7 @@ from .widget import ContextWidget
 from textual.reactive import reactive
 from textual import work, on
 from textual.coordinate import Coordinate
+from textual.message import Message
 from .orm import Record, SearchResult, PaginationParams
 from typing import Any, Callable, Union, Optional
 from typing_extensions import TypedDict
@@ -29,6 +30,7 @@ class PaginatedTable(ContextWidget):
     params: reactive[dict[str, Any]]
     total: reactive[int]
     page_status: reactive[str]
+    cursor_mode: reactive[str]
     BINDINGS = [
         ("ctrl+r", "refresh()", "Refresh Data"),
     ]
@@ -45,6 +47,7 @@ class PaginatedTable(ContextWidget):
         initial_pagination: PaginationParams = {"offset": 0, "limit": 25, "order": []},
         initial_params: dict[str, Any] = {},
         initial_total: int = 0,
+        cursor_type: str = "none"
     ) -> None:
         """Paginated Table Class
 
@@ -71,6 +74,8 @@ class PaginatedTable(ContextWidget):
         self.total = initial_total
         self.calculate_page_status()
         self.lock = False
+        self.cursor_mode = cursor_type
+        self.cursor_waiting = True
 
     def calculate_page_status(self) -> None:
         page_size = self.pagination["limit"]
@@ -114,7 +119,7 @@ class PaginatedTable(ContextWidget):
         """Update data from current attrs"""
         while self.lock:
             pass
-        
+        self.cursor_waiting = True
         self.lock = True
         table = self.query_one(".paginated-table", expect_type=DataTable)
         table.clear(columns=True)
@@ -134,7 +139,7 @@ class PaginatedTable(ContextWidget):
 
     def compose(self) -> ComposeResult:
         yield Container(
-            DataTable(classes="paginated-table"),
+            DataTable(classes="paginated-table", show_cursor=True, cursor_type=self.cursor_mode),
             Grid(
                 Button("<- Previous", classes="pagination-control-item previous"),
                 Static(self.page_status, classes="pagination-control-item status"),
@@ -229,5 +234,37 @@ class PaginatedTable(ContextWidget):
         self.pagination = self.default_pagination.copy()
         self.params = params
         self.update_data()
+
+    def watch_cursor_mode(self, old, new):
+        self.cursor_waiting = True
+        self.query_one(".paginated-table", expect_type=DataTable).cursor_type = new
+
+    class CursorEvent(Message):
+        def __init__(self, value: Any) -> None:
+            super().__init__()
+            self.value = value
+
+    @on(DataTable.CellHighlighted)
+    def on_cursor_event_cell(self, event: DataTable.CellHighlighted):
+        if self.cursor_waiting:
+            self.cursor_waiting = False
+            return
+        self.post_message(self.CursorEvent(event.value))
+
+    @on(DataTable.RowHighlighted)
+    def on_cursor_event_row(self, event: DataTable.RowHighlighted):
+        if self.cursor_waiting:
+            self.cursor_waiting = False
+            return
+        self.post_message(self.CursorEvent(self.data[event.cursor_row]))
+
+    @on(DataTable.ColumnHighlighted)
+    def on_cursor_event_column(self, event: DataTable.ColumnHighlighted):
+        if self.cursor_waiting:
+            self.cursor_waiting = False
+            return
+        column = self.columns[event.cursor_column]
+        key = column["key"]
+        return self.post_message(self.CursorEvent([getattr(d, key) for d in self.data]))
                     
             
