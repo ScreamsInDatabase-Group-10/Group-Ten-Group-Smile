@@ -474,7 +474,7 @@ class BookRecord(Record):
                     ["%%" + audience + "%%"],
                 )
             )
-        if author_name != None:
+        if publisher_name != None:
             fields.append(
                 SearchCondition(
                     "books.id IN (SELECT book_id FROM books_publishers AS pubs WHERE contributor_id IN (SELECT contributors.id FROM contributors WHERE name_last_company ilike %s))",
