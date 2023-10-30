@@ -18,6 +18,7 @@ class CollectionRecord(Record):
             self,
             db: Connection,
             table: str,
+            orm: ORM,
             id: int,
             name: str,
             _books: list[BookRecord] = None,
@@ -84,7 +85,7 @@ class CollectionRecord(Record):
         )
         result = UserRecord(self.db, "users", self.orm, *(cursor.fetchone()))
         cursor.close()
-        
+
         self.cache["user"] = result
         return result
 
