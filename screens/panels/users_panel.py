@@ -92,6 +92,49 @@ class AdvancedSearchModal(ContextModal):
                 self.fields[event.input.name] = event.value
 
 
+class UserActionsModal(ContextModal):
+    def __init__(
+        self,
+        record: UserRecord,
+        name: str | None = None,
+        id: str | None = None,
+        classes: str | None = None,
+    ) -> None:
+        super().__init__(name, id, classes)
+        self.record = record
+
+    def compose(self) -> ComposeResult:
+        with Grid(id="user-actions-divider"):
+            yield Static(
+                f"[b]User Actions:[/b] [i]{self.record.name_first} {self.record.name_last}[/i]",
+                id="actions-title",
+            )
+            with Grid(id="modal-seciton-follow", classes="modal-section"):
+                yield ListItem(
+                    Static("[b]Follow[/b]"), classes="input-label", id="label-follow"
+                )
+                yield Button("Follow", id="follow-user-button")
+
+            yield Button("Exit", id="exit-user-actions")
+
+    @on(Button.Pressed, "#exit-user-actions")
+    def exit_actions(self):
+        self.dismiss()
+
+    @on(Button.Pressed, "#follow-user-button")
+    def follow(self):
+        try:
+            self.context.db.execute(
+                "INSERT INTO users_following (user_id, following_id) VALUES (%s, %s)",
+                [self.context.logged_in.id, self.record.id],
+            )
+            self.context.db.commit()
+            self.app.notify("Success!", severity="information")
+            self.dismiss()
+        except:
+            self.app.notify("Failure", severity="error")
+
+
 class UsersPanel(ContextWidget):
     def __init__(
         self,
@@ -155,6 +198,7 @@ class UsersPanel(ContextWidget):
                     "offset": 0,
                     "order": [["name_first", "ASC"], ["name_last", "ASC"]],
                 },
+                cursor_type="row",
             ),
             classes="panel users",
             id="app-panel-users",
@@ -190,3 +234,7 @@ class UsersPanel(ContextWidget):
             del self.fields["name_first"]
         else:
             self.fields["name_first"] = event.value
+
+    @on(PaginatedTable.CursorEvent)
+    def on_row_highlight(self, event: PaginatedTable.CursorEvent):
+        self.app.push_screen(UserActionsModal(event.value, id="user-actions-modal"))
