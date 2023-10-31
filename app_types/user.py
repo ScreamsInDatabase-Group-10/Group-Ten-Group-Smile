@@ -175,3 +175,11 @@ class UserRecord(Record):
         )
 
         return results
+    
+    @property
+    def followers(self) -> list["UserRecord"]:
+        return self.orm.get_records_from_cursor("users", self.db.execute("SELECT * FROM users WHERE id IN (SELECT user_id FROM users_following WHERE following_id = %s)", [self.id]))
+
+    @property
+    def following(self) -> list["UserRecord"]:
+        return self.orm.get_records_from_cursor("users", self.db.execute("SELECT * FROM users WHERE id IN (SELECT following_id FROM users_following WHERE user_id = %s)", [self.id]))
