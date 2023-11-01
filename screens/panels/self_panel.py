@@ -1,4 +1,6 @@
+from textual import on
 from textual.app import ComposeResult
+from textual.screen import Screen
 from textual.widgets import Placeholder, Label, Static, ListView, ListItem, Button
 from textual.containers import Container
 from app_types.user import CollectionRecord, UserRecord
@@ -28,14 +30,18 @@ class Collection(Static):
             disabled: bool = False,
 
     ):
-        super().__init__(
-            name=name, id=id, classes=classes, disabled=disabled
-        )
+        super().__init__(name=name, id=id, classes=classes, disabled=disabled)
         self.collection = collection
 
     def compose(self) -> ComposeResult:
         yield Static(self.collection.name)
-        yield Button("Edit", id=f"collection-button-{self.collection.id}")
+        yield Button("Edit", id=f"collection-button")
+
+    @on(Button.Pressed, f"#collection-button")
+    def on_edit(self):
+        # TODO: self.collection is confirmed to be correct. Finish function
+        print("hai :3")
+
 
 class SelfPanel(ContextWidget):
     def compose(self) -> ComposeResult:
