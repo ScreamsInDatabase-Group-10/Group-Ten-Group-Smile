@@ -100,6 +100,7 @@ class CollectionRecord(Record):
             _book_count: int = None,
             _user: UserRecord = None
     ) -> None:
+        self.orm = orm # TODO: put this in the super class
         self.db = db
         self.table = table
         self.id = id
@@ -111,7 +112,8 @@ class CollectionRecord(Record):
         }
 
     def save(self) -> None:
-        # TODO: more fields
+        # TODO: implement save
+        """
         self.db.execute(
             "UPDATE "
             + self.table
@@ -121,6 +123,7 @@ class CollectionRecord(Record):
                 self.id
             )
         )
+        """
 
     def delete(self) -> None:
         self.db.execute("DELETE FROM " + self.table +
@@ -166,7 +169,7 @@ class CollectionRecord(Record):
         return result
 
     @classmethod
-    def create(cls, name: str, ) -> Union["CollectionRecord", None]:
+    def create(cls, orm: ORM, name: str, ) -> Union["CollectionRecord", None]:
         # TODO: next_id is not safe. Maybe improve?
         next_id = ORM.next_available_id("collections")
         raise NotImplementedError
