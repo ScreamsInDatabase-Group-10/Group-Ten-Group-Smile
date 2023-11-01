@@ -109,11 +109,7 @@ class UserActionsModal(ContextModal):
                 f"[b]User Actions:[/b] [i]{self.record.name_first} {self.record.name_last}[/i]",
                 id="actions-title",
             )
-            with Grid(id="modal-seciton-follow", classes="modal-section"):
-                yield ListItem(
-                    Static("[b]Follow[/b]"), classes="input-label", id="label-follow"
-                )
-                yield Button("Follow", id="follow-user-button")
+            yield Button("Follow", id="follow-user-button")
 
             yield Button("Exit", id="exit-user-actions")
 
