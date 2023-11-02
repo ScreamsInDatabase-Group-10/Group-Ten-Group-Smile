@@ -422,7 +422,7 @@ class BookRecord(Record):
             for i in list(set(editors.split("|")))
         ] if editors else []
         rating_records = [
-            RatingRecord(db, "users_ratings", orm, int(i.split(":")[0]), int(i.split(":")[1]))
+            RatingRecord(db, "users_ratings", orm, int(i.split(":")[0]), int(i.split(":")[1]), id)
             for i in list(set(ratings.split("|")))
         ] if ratings else []
         return BookRecord(

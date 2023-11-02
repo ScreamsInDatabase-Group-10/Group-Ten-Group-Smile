@@ -231,8 +231,11 @@ class BookActionsModal(ContextModal):
             return False
         
     def check_rating(self, rating: str) -> bool:
-        if rating.int() == float(rating) and 0 <= rating.int() and rating.int() <= 5:
-            return True
+        try:
+            if 0 <= int(rating) and int(rating) <= 5:
+                return True
+        except ValueError:
+            return False
         return False
 
     def compose(self) -> ComposeResult:
@@ -286,9 +289,9 @@ class BookActionsModal(ContextModal):
                 )
                 yield Input(
                     value="",
-                    placeholder="0-5"
-                    classes="input-field"
-                    id="input-rating"
+                    placeholder="0-5",
+                    classes="input-field",
+                    id="input-rating",
                     validators=[Function(self.check_rating, "Rating is not a valid int 0-5")]
                 )
                 yield Button("Rate", id="create-rating")
@@ -332,8 +335,11 @@ class BookActionsModal(ContextModal):
     @on(Button.Pressed, "#create-rating")
     def create_rating(self):
         inputs: dict[str, Input] = {
-            "rating": self.query_one("#input-rating", expect_type=Input)
+            "rating": self.query_one("#input-rating", expect_type=Input).value
         }
+        rating = inputs["rating"]
+        self.query_one("#input-start-time", expect_type=Input).value = rating
+        
 
          
 
