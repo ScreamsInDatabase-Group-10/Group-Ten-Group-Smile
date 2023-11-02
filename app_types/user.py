@@ -96,7 +96,6 @@ class CollectionRecord(Record):
             orm: ORM,
             id: int,
             name: str,
-            _books: list[BookRecord] = None,
             _book_count: int = None,
             _user: UserRecord = None
     ) -> None:
@@ -105,30 +104,44 @@ class CollectionRecord(Record):
         self.table = table
         self.id = id
         self.name = name
+        self.books = self._init_books()
         self.cache = {
-            "books": _books,
             "book_count": _book_count,
             "user": _user
         }
 
     def save(self) -> None:
-        # TODO: implement save
-        """
         self.db.execute(
             "UPDATE "
             + self.table
-            + "SET NAME = %s WHERE ID = %s",
-            (
-                self.name,
-                self.id
-            )
+            + " SET NAME = %(name)s WHERE ID = %(id)s",
+            {"name": self.name, "id": self.id}
         )
-        """
+        # TODO: ewww...
+        self.db.execute(
+            "DELETE FROM books_collections WHERE collection_id = %(id)s",
+            {"id": self.id}
+        )
+        if(len(self.books) != 0):
+            self.db.execute(
+                "INSERT INTO books_collections (book_id, collection_id) VALUES" + ",".join([f"({book.id}, {self.id})" for book in self.books])
+            )
+        self.db.commit()
 
     def delete(self) -> None:
         self.db.execute("DELETE FROM " + self.table +
                         " WHERE id = %s", (self.id,))
         self.db.commit()
+
+    def add_book(self, book: BookRecord) -> None:
+        if(book not in self.books):
+            self.books.append(book)
+    
+    def remove_book(self, book: BookRecord) -> bool:
+        if(book in self.books):
+            self.books.remove(book)
+            return True
+        return False
 
     # TODO
     @property
@@ -137,10 +150,7 @@ class CollectionRecord(Record):
             return self.cache["book_count"]
         raise NotImplementedError
 
-    @property
-    def books(self) -> list[BookRecord]:
-        if self.cache["books"] != None:
-            return self.cache["books"]
+    def _init_books(self) -> list[BookRecord]:
         cursor = self.db.execute(
             "SELECT * FROM books AS root WHERE id IN (SELECT book_id FROM books_collections WHERE collection_id = %(id)s)",
             {"id": self.id},
@@ -151,7 +161,6 @@ class CollectionRecord(Record):
         ]
         cursor.close()
 
-        self.cache["books"] = results
         return results
 
     @property
