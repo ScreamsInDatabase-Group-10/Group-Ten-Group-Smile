@@ -102,6 +102,15 @@ class UserActionsModal(ContextModal):
     ) -> None:
         super().__init__(name, id, classes)
         self.record = record
+        cursor = self.context.db.execute(
+            "SELECT user_id from users_following where user_id=%s AND following_id=%s",
+            [self.context.logged_in.id, record.id],
+        )
+        if cursor.fetchone():
+            self.following = True
+        else:
+            self.following = False
+        cursor.close()
 
     def compose(self) -> ComposeResult:
         with Grid(id="user-actions-divider"):
@@ -109,7 +118,10 @@ class UserActionsModal(ContextModal):
                 f"[b]User Actions:[/b] [i]{self.record.name_first} {self.record.name_last}[/i]",
                 id="actions-title",
             )
-            yield Button("Follow", id="follow-user-button")
+            if self.following:
+                yield Button("Unfollow", id="follow-user-button")
+            else:
+                yield Button("Follow", id="follow-user-button")
 
             yield Button("Exit", id="exit-user-actions")
 
@@ -120,10 +132,16 @@ class UserActionsModal(ContextModal):
     @on(Button.Pressed, "#follow-user-button")
     def follow(self):
         try:
-            self.context.db.execute(
-                "INSERT INTO users_following (user_id, following_id) VALUES (%s, %s)",
-                [self.context.logged_in.id, self.record.id],
-            )
+            if self.following:
+                self.context.db.execute(
+                    "DELETE FROM users_following where user_id = %s AND following_id = %s",
+                    [self.context.logged_in.id, self.record.id],
+                )
+            else:
+                self.context.db.execute(
+                    "INSERT INTO users_following (user_id, following_id) VALUES (%s, %s)",
+                    [self.context.logged_in.id, self.record.id],
+                )
             self.context.db.commit()
             self.app.notify("Success!", severity="information")
             self.dismiss()
