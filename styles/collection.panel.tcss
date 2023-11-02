@@ -6,6 +6,10 @@
     grid-gutter: 1 1;
 }
 
+#collection-container {
+    height: 100%;
+}
+
 .collection-edit-modal {
     align: center middle;
 }

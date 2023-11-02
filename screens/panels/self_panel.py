@@ -14,13 +14,15 @@ def CollectionContainer(user: UserRecord) -> Container:
     if (len(user.collections()) == 0):
         return Container(
             Static("Collections"),
-            Static("No user collections! Make your first one below!")
+            Static("No user collections! Make your first one below!"),
+            id="collection-container"
         )
     return Container(
         Static("Collections"),
         ListView(
             *[ListItem(Collection(c), classes="list-item") for c in user.collections()]
-        )
+        ),
+        id="colleciton-container"
     )
 
 
@@ -34,6 +36,7 @@ class CollectionEditModal(ContextModal):
     ) -> None:
         super().__init__(name, id, classes)
         self.collection = collection
+        self.newName = collection.name
 
     def compose(self) -> ComposeResult:
         with Grid(id="collection-edit-modal-container"):
@@ -53,15 +56,20 @@ class CollectionEditModal(ContextModal):
                 id="book-list"
             )
             yield Button("Save", id="save-button")
-            yield Button("Close", id="close-button")
+            yield Button("Cancel", id="cancel-button")
 
     @on(Button.Pressed, "#save-button")
     def on_save(self):
+        self.collection.name = self.newName
         self.collection.save()
+        self.dismiss(self.collection)
 
-    @on(Button.Pressed, "#close-button")
+    @on(Button.Pressed, "#cancel-button")
     def on_close(self):
         self.dismiss(None)
+    
+    def on_input_changed(self, event: Input.Changed):
+        self.newName = event.input.value
 
 
 class CollectionBook(Static):
@@ -87,11 +95,15 @@ class CollectionBook(Static):
     def on_remove(self):
         if (self.removed == False):
             # TODO: Change button title to red strikethrough
+            self.query_one("#title", expect_type=Static).update(
+                f"[s]{self.book.title}[/s]")
+            self.query_one("#toggle-button", expect_type=Button).label = "Add"
             self.removed = True
-            # TODO: remove book from collection in db.
-            # Maybe a collection.removeBook method
+            self.collection.remove_book(self.book)
         else:
-            # TODO: add the book back to the collection
+            self.query_one("#title", expect_type=Static).update(self.book.title)
+            self.query_one("#toggle-button", expect_type=Button).label = "Remove"
+            self.collection.add_book(self.book)
             self.removed = False
 
 
@@ -109,13 +121,19 @@ class Collection(Static):
         self.collection = collection
 
     def compose(self) -> ComposeResult:
-        yield Static(self.collection.name)
+        yield Static(self.collection.name, id="collection-name")
         yield Button("View/Edit", id="collection-button")
+
+    def collection_update(self, collection: CollectionRecord | None) -> None:
+        if collection == None: return
+        self.collection = collection
+        self.query_one("#collection-name", expect_type=Static).update(
+            self.collection.name
+            )
 
     @on(Button.Pressed, "#collection-button")
     def on_edit(self):
-        # TODO: self.collection is confirmed to be correct. Finish function
-        self.app.push_screen(CollectionEditModal(self.collection))
+        self.app.push_screen(CollectionEditModal(self.collection), self.collection_update)
 
 
 class SelfPanel(ContextWidget):
