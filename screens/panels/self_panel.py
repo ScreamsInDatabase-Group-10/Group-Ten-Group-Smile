@@ -58,13 +58,16 @@ def CollectionContainer(user: UserRecord) -> Container:
         return Container(
             Static("Collections"),
             Static("No user collections! Make your first one below!"),
+            Button("Create Collection"),
             id="collection-container"
         )
     return Container(
         Static("Collections"),
         ListView(
-            *[ListItem(Collection(c), classes="list-item") for c in user.collections()]
+            *[ListItem(Collection(c), classes="list-item") for c in user.collections()],
+            id="collection-list"
         ),
+        Button("Create Collection"),
         id="colleciton-container"
     )
 

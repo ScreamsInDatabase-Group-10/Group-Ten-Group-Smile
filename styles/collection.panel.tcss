@@ -9,6 +9,9 @@
 #collection-container {
     height: 100%;
 }
+#collection-list {
+    height: 100%;
+}
 
 .collection-edit-modal {
     align: center middle;
