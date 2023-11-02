@@ -19,7 +19,7 @@ def CollectionContainer(user: UserRecord) -> Container:
     return Container(
         Static("Collections"),
         ListView(
-            *[ListItem(Collection(c)) for c in user.collections()]
+            *[ListItem(Collection(c), classes="list-item") for c in user.collections()]
         )
     )
 
@@ -30,7 +30,7 @@ class CollectionEditModal(ContextModal):
         collection: "Collection",
         name: str | None = None,
         id: str | None = None,
-        classes: str | None = "advanced-search-modal",
+        classes: str | None = "collection-edit-modal",
     ) -> None:
         super().__init__(name, id, classes)
         self.collection = collection
@@ -49,7 +49,8 @@ class CollectionEditModal(ContextModal):
                 name="name",
             )
             yield ListView(
-                *[ListItem(CollectionBook(b, self.collection)) for b in self.collection.books]
+                *[ListItem(CollectionBook(b, self.collection), classes="list-item") for b in self.collection.books],
+                id="book-list"
             )
             yield Button("Save", id="save-button")
             yield Button("Close", id="close-button")
