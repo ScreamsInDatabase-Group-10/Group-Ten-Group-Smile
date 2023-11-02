@@ -66,3 +66,42 @@
 #button-search {
     dock: right;
 }
+
+
+#user-actions-modal {
+    align: center middle;
+}
+
+#user-actions-divider {
+    width: 25%;
+    height: 50%;
+    content-align: center middle;
+    grid-size: 1 4;
+    padding: 3 3;
+    padding-bottom: 0;
+}
+
+#actions-title {
+    column-span: 1;
+    content-align: center middle;
+}
+
+#user-actions-divider .modal-section {
+    column-span: 1;
+    row-span: 8;
+    grid-gutter: 1 1;
+}
+
+#user-actions-divider .modal-section .section-title {
+    column-span: 3;
+    content-align: center middle;
+}
+
+#modal-section-follow {
+    grid-size: 3 6;
+}
+
+#follow {
+    width: 100%;
+    column-span: 2;
+}
