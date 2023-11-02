@@ -229,6 +229,11 @@ class BookActionsModal(ContextModal):
             return True
         except:
             return False
+        
+    def check_rating(self, rating: str) -> bool:
+        if rating.int() == float(rating) and 0 <= rating.int() and rating.int() <= 5:
+            return True
+        return False
 
     def compose(self) -> ComposeResult:
         with Grid(id="book-actions-divider"):
@@ -274,6 +279,19 @@ class BookActionsModal(ContextModal):
                     id="input-end-page",
                 )
                 yield Button("Create", id="create-session")
+
+                yield Static("New Rating", classes="section-title")
+                yield ListItem(
+                    Static("[b]Rating[/b]"), classes="input-label", id="label-rating"
+                )
+                yield Input(
+                    value="",
+                    placeholder="0-5"
+                    classes="input-field"
+                    id="input-rating"
+                    validators=[Function(self.check_rating, "Rating is not a valid int 0-5")]
+                )
+                yield Button("Rate", id="create-rating")
             yield Button("Exit", id="exit-actions")
     
     @on(Button.Pressed, "#exit-actions")
@@ -311,6 +329,13 @@ class BookActionsModal(ContextModal):
         self.query_one("#input-start-page", expect_type=Input).value = ""
         self.query_one("#input-end-page", expect_type=Input).value = ""
 
+    @on(Button.Pressed, "#create-rating")
+    def create_rating(self):
+        inputs: dict[str, Input] = {
+            "rating": self.query_one("#input-rating", expect_type=Input)
+        }
+
+         
 
 class BooksPanel(ContextWidget):
     def __init__(

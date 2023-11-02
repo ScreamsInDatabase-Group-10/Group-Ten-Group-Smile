@@ -167,11 +167,44 @@ class SessionRecord(Record):
         pass
 
 class RatingRecord(Record):
-    def __init__(self, db: Connection, table: str, orm: ORM, user_id: int, rating: int) -> None:
+    def __init__(self, db: Connection, table: str, orm: ORM, user_id: int, rating: int, book_id: int) -> None:
         super().__init__(db, table, orm)
         self.user_id = user_id
+        self.book_id = book_id
         self.rating = rating
 
+    def create(cls, orm: ORM, user_id: int, book_id: int, rating: int):
+        try:
+            orm.db.execute(
+                "INSERT INTO ratings (book_id, user_id, rating) VALUES (%i, %i, %i)",
+                (book_id, user_id, rating),
+            )
+            orm.db.commit()
+            return UserRecord(
+                orm.db,
+                "ratings",
+                orm,
+                user_id,
+                
+            )
+        except:
+            return None
+
+
+    def save(self):
+        self.db.execute(
+            "UPDATE " 
+            + self.table
+            + " SET book_id = %i, user_id = %i, rating = %i WHERE user_id = %i && book_id = %i",
+            (
+                self.book_id,
+                self.user_id,
+                self.rating,
+                self.book_id,
+                self.user_id
+            )
+        )
+        self.db.commit()
 
 class BookRecord(Record):
     def __init__(
