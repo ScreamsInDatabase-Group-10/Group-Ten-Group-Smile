@@ -102,12 +102,18 @@ class CollectionEditModal(ContextModal):
                 id="book-list"
             )
             yield Button("Save", id="save-button")
+            yield Button("Delete", id="delete-button")
             yield Button("Cancel", id="cancel-button")
 
     @on(Button.Pressed, "#save-button")
     def on_save(self):
         self.collection.name = self.newName
         self.collection.save()
+        self.dismiss(self.collection)
+
+    @on(Button.Pressed, "#delete-button")
+    def on_delete(self):
+        self.collection.delete()
         self.dismiss(self.collection)
 
     @on(Button.Pressed, "#cancel-button")
