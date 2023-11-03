@@ -52,24 +52,22 @@ class ConnectionsPanel(ContextWidget):
             del self.following[event.coordinate.row]
             self.watch_following([], self.following)
 
-def CollectionContainer(user: UserRecord) -> Container:
-    # TODO: make container fill all the way down
-    if (len(user.collections()) == 0):
-        return Container(
-            Static("Collections"),
-            Static("No user collections! Make your first one below!"),
-            Button("Create Collection"),
-            id="collection-container"
+class CollectionContainer(ContextWidget):
+    def compose(self) -> ComposeResult:
+        with TabbedContent():
+            with TabPane("Collections"):
+                yield Button("Create Collection", id="create-collection-button")
+                yield ListView(
+                    *[ListItem(Collection(c), classes="list-item") for c in self.context.logged_in.collections()],
+                    id="collection-list"
+                )
+    
+    @on(Button.Pressed, "#create-collection-button")
+    def create_collection_button(self):
+        self.query_one("#collection-list", expect_type=ListView).mount(
+            ListItem(Collection(CollectionRecord.create(self.context.orm, "New Collection", self.context.logged_in)))
         )
-    return Container(
-        Static("Collections"),
-        ListView(
-            *[ListItem(Collection(c), classes="list-item") for c in user.collections()],
-            id="collection-list"
-        ),
-        Button("Create Collection"),
-        id="colleciton-container"
-    )
+
 
 
 class CollectionEditModal(ContextModal):
@@ -199,8 +197,11 @@ class SelfPanel(ContextWidget):
         yield Container(
             Static("Email: " + user.email + " Name: " + user.name_first + " " + user.name_last + "\nDate Created: " +
                    user.creation_dt.strftime('%b %d %Y'), id="user-info-section", classes="panel-sections user-info"),
-            CollectionContainer(user),
-            ConnectionsPanel(id="connections-section", classes="panel-sections connections"),
+            CollectionContainer(id="collections-section"),
+            ConnectionsPanel(id="connections-section"),
             classes="panel self",
             id="app-panel-self",
         )
+    
+    #@on(Button.Pressed, "create-button")
+    #def on_create_collection():

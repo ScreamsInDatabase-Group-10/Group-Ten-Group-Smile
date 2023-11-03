@@ -250,13 +250,13 @@ class AddCollection(Static):
         self.collection.save()
 
 class AddToCollectionModal(ContextModal):
-    def __init__(self, user: UserRecord, book: BookRecord, name: str | None = None, id: str | None = None, classes: str | None = None) -> None:
+    def __init__(self, user: UserRecord, book: BookRecord, name: str | None = None, id: str | None = None, classes: str | None = "add-to-collection-modal") -> None:
         super().__init__(name, id, classes)
         self.user = user
         self.book = book
     
     def compose(self) -> ComposeResult:
-        with Container():
+        with Container(id="add-to-collection-modal-container"):
             yield ListView(
                 *[ListItem(AddCollection(c, self.book)) for c in self.user.collections()]
             )

@@ -29,6 +29,15 @@
     align: center middle;
 }
 
+#add-to-collection-modal-container {
+    width: 50%;
+    padding: 1 3;
+}
+
+.add-to-collection-modal {
+    align: center middle;
+}
+
 #advanced-title {
     column-span: 3;
     content-align: center middle;
