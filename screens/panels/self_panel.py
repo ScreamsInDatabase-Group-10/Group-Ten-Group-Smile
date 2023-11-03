@@ -72,6 +72,7 @@ class ConnectionsPanel(ContextWidget):
                 "DELETE FROM users_following WHERE user_id = %s AND following_id = %s",
                 [self.context.logged_in.id, record.id],
             )
+            self.context.db.commit()
             del self.following[event.coordinate.row]
             self.watch_following([], self.following)
 
