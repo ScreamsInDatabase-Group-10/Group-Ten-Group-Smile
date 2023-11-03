@@ -173,29 +173,29 @@ class RatingRecord(Record):
         self.book_id = book_id
         self.rating = rating
 
-    def create(cls, orm: ORM, user_id: int, book_id: int, rating: int):
-        try:
-            orm.db.execute(
-                "INSERT INTO ratings (book_id, user_id, rating) VALUES (%i, %i, %i)",
-                (book_id, user_id, rating),
-            )
-            orm.db.commit()
-            return UserRecord(
-                orm.db,
-                "ratings",
-                orm,
-                user_id,
-                
-            )
-        except:
-            return None
-
+    def create(orm: ORM, user_id: int, book_id: int, rating: int):
+        
+        orm.db.execute(
+            "INSERT INTO users_ratings (book_id, user_id, rating) VALUES (%s, %s, %s)",
+            (book_id, user_id, rating),
+        )
+        orm.db.commit()
+        return RatingRecord(
+            orm.db,
+            "users_ratings",
+            orm,
+            user_id,
+            rating,
+            book_id
+        )
+        
+        return None
 
     def save(self):
         self.db.execute(
             "UPDATE " 
             + self.table
-            + " SET book_id = %i, user_id = %i, rating = %i WHERE user_id = %i && book_id = %i",
+            + " SET book_id = %s, user_id = %s, rating = %s WHERE user_id == %s && book_id == %s",
             (
                 self.book_id,
                 self.user_id,

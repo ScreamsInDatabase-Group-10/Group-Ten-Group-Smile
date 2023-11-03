@@ -5,6 +5,7 @@ from textual.widgets import Placeholder, Input, Button, Static, ListItem
 from textual.containers import Container, Horizontal, Grid
 from util import ContextWidget, PaginatedTable, ContextModal
 from app_types import BookRecord
+from app_types import RatingRecord
 from datetime import datetime
 from typing_extensions import TypedDict
 from textual import on, work
@@ -337,8 +338,14 @@ class BookActionsModal(ContextModal):
         inputs: dict[str, Input] = {
             "rating": self.query_one("#input-rating", expect_type=Input).value
         }
-        rating = inputs["rating"]
-        self.query_one("#input-start-time", expect_type=Input).value = rating
+        try:
+            star_rating = inputs["rating"]
+            RatingRecord.create(self.context.orm, self.context.logged_in.id, self.record.id, star_rating)
+            self.app.notify("Success!", severity="information")
+        except:
+            self.app.notify("Failure!", severity="error")
+
+        self.query_one("#input-rating", expect_type=Input).value = ""
         
 
          
