@@ -212,6 +212,7 @@ class CollectionRecord(Record):
         self.id = id
         self.name = name
         self.books = self._init_books()
+        self.deleted = False
         self.cache = {
             "user": _user
         }
@@ -235,9 +236,12 @@ class CollectionRecord(Record):
         self.db.commit()
 
     def delete(self) -> None:
+        self.db.execute("DELETE FROM books_collections WHERE collection_id = %(id)s", {"id": self.id})
+        self.db.execute("DELETE FROM users_collections WHERE collection_id = %(id)s", {"id": self.id})
         self.db.execute("DELETE FROM " + self.table +
-                        " WHERE id = %s", (self.id,))
+                        " WHERE id = %(id)s", {"id": self.id})
         self.db.commit()
+        self.deleted = True
 
     def add_book(self, book: BookRecord) -> None:
         if(book not in self.books):

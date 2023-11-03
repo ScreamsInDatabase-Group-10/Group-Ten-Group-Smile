@@ -169,8 +169,7 @@ class Collection(Static):
             name: str | None = None,
             id: str | None = None,
             classes: str | None = None,
-            disabled: bool = False,
-
+            disabled: bool = False
     ):
         super().__init__(name=name, id=id, classes=classes, disabled=disabled)
         self.collection = collection
@@ -181,10 +180,13 @@ class Collection(Static):
 
     def collection_update(self, collection: CollectionRecord | None) -> None:
         if collection == None: return
-        self.collection = collection
-        self.query_one("#collection-name", expect_type=Static).update(
-            self.collection.name
-            )
+        if collection.deleted:
+            self.remove()
+        else:
+            self.collection = collection
+            self.query_one("#collection-name", expect_type=Static).update(
+                self.collection.name
+                )
 
     @on(Button.Pressed, "#collection-button")
     def on_edit(self):
