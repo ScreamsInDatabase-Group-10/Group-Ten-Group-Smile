@@ -213,7 +213,6 @@ class CollectionRecord(Record):
         self.name = name
         self.books = self._init_books()
         self.cache = {
-            "book_count": _book_count,
             "user": _user
         }
 
@@ -250,12 +249,14 @@ class CollectionRecord(Record):
             return True
         return False
 
-    # TODO
     @property
     def book_count(self) -> int:
-        if self.cache["book_count"] != None:
-            return self.cache["book_count"]
-        raise NotImplementedError
+        return self.db.execute("SELECT COUNT(*) FROM books_collections WHERE collection_id = %(id)s", {"id": self.id}).fetchone()[0]
+
+    @property
+    def page_count(self) -> int:
+        return self.db.execute("SELECT SUM(length) FROM books WHERE id IN (SELECT book_id FROM books_collections WHERE collection_id = %(id)s)", {"id": self.id}).fetchone()[0]
+
 
     def _init_books(self) -> list[BookRecord]:
         cursor = self.db.execute(

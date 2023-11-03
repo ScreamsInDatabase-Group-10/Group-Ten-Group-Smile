@@ -87,7 +87,9 @@ class CollectionEditModal(ContextModal):
 
     def compose(self) -> ComposeResult:
         with Grid(id="collection-edit-modal-container"):
-            yield Static("[b]Edit Collection:[/b]", id="edit-title")
+            yield Static(f"[b]Edit Collection: \"{self.collection.name}\"[/b]", id="edit-title")
+            yield Static(f"[b]Book Count:[/b] {self.collection.book_count}", classes="collection-info")
+            yield Static(f"[b]Page Count:[/b] {self.collection.page_count}", classes="collection-info")
             yield ListItem(
                 Static("[b]Name[/b]"), classes="input-label", id="label-name"
             )
