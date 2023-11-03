@@ -82,7 +82,7 @@ class UserRecord(Record):
 
     def collections(self) -> list("CollectionRecord"):
         cursor = self.db.execute(
-            f"SELECT * from collections WHERE id IN (SELECT collection_id from users_collections where user_id = {self.id})"
+            f"SELECT * from collections WHERE id IN (SELECT collection_id from users_collections where user_id = {self.id}) ORDER BY name"
         )
         results = [CollectionRecord(self.db, "collections", self.orm, *r) for r in cursor.fetchall()]
         cursor.close()
@@ -243,7 +243,6 @@ class CollectionRecord(Record):
     def add_book(self, book: BookRecord) -> None:
         if(book not in self.books):
             self.books.append(book)
-        self.books.sort(key=lambda rec: rec.title)
     
     def remove_book(self, book: BookRecord) -> bool:
         if(book in self.books):
@@ -268,8 +267,6 @@ class CollectionRecord(Record):
             for r in cursor.fetchall()
         ]
         cursor.close()
-
-        results.sort(key=lambda rec: rec.title)
 
         return results
 
