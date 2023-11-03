@@ -372,6 +372,8 @@ class BookRecord(Record):
             cursor = self.db.execute("SELECT AVG(rating) FROM users_ratings WHERE book_id = %s", [self.id])
             result = cursor.fetchone()[0]
             cursor.close()
+            if not result:
+                result = 0
             return round(result, 2)
     
     # Build from search results
