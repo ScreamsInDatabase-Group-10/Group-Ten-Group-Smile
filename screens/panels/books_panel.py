@@ -1,8 +1,9 @@
 from typing import Any, Coroutine, Union
 from textual.app import ComposeResult
 from textual.widget import Widget
-from textual.widgets import Placeholder, Input, Button, Static, ListItem
+from textual.widgets import Placeholder, Input, Button, Static, ListView, ListItem
 from textual.containers import Container, Horizontal, Grid
+from app_types.user import CollectionRecord, UserRecord
 from util import ContextWidget, PaginatedTable, ContextModal
 from app_types import BookRecord
 from app_types import RatingRecord
@@ -217,6 +218,54 @@ class AdvancedSearchModal(ContextModal):
             else:
                 self.fields[event.input.name] = event.value
 
+class AddCollection(Static):
+    def __init__(
+                self,
+                collection: CollectionRecord,
+                book: BookRecord,
+                name: str | None = None,
+                id: str | None = None,
+                classes: str | None = None,
+                disabled: bool = False,
+
+        ):
+            super().__init__(name=name, id=id, classes=classes, disabled=disabled)
+            self.collection = collection
+            self.book = book
+
+    def compose(self) -> ComposeResult:
+        yield Static(self.collection.name, id="collection-name")
+        yield Button("Add", id="collection-button")
+
+    def collection_update(self, collection: CollectionRecord | None) -> None:
+        if collection == None: return
+        self.collection = collection
+        self.query_one("#collection-name", expect_type=Static).update(
+            self.collection.name
+            )
+
+    @on(Button.Pressed, "#collection-button")
+    def on_add(self):
+        self.collection.add_book(self.book)
+        self.collection.save()
+
+class AddToCollectionModal(ContextModal):
+    def __init__(self, user: UserRecord, book: BookRecord, name: str | None = None, id: str | None = None, classes: str | None = None) -> None:
+        super().__init__(name, id, classes)
+        self.user = user
+        self.book = book
+    
+    def compose(self) -> ComposeResult:
+        with Container():
+            yield ListView(
+                *[ListItem(AddCollection(c, self.book)) for c in self.user.collections()]
+            )
+            yield Button("Exit", id="collection-exit-button")
+
+    @on(Button.Pressed, "#collection-exit-button")
+    def on_exit(self):
+        self.dismiss(None)
+
 class BookActionsModal(ContextModal):
     def __init__(self, record: BookRecord, name: str | None = None, id: str | None = None, classes: str | None = None) -> None:
         super().__init__(name, id, classes)
@@ -283,7 +332,7 @@ class BookActionsModal(ContextModal):
                     id="input-end-page",
                 )
                 yield Button("Create", id="create-session")
-
+                yield Button("Add to Collection...", id="collection-button")
                 yield Static("New Rating", classes="section-title")
                 yield ListItem(
                     Static("[b]Rating[/b]"), classes="input-label", id="label-rating"
@@ -296,6 +345,7 @@ class BookActionsModal(ContextModal):
                     validators=[Function(self.check_rating, "Rating is not a valid int 0-5")]
                 )
                 yield Button("Rate", id="create-rating")
+
             yield Button("Exit", id="exit-actions")
     
     @on(Button.Pressed, "#exit-actions")
@@ -346,8 +396,10 @@ class BookActionsModal(ContextModal):
             self.app.notify("Failure!", severity="error")
 
         self.query_one("#input-rating", expect_type=Input).value = ""
-        
 
+    @on(Button.Pressed, "#collection-button")
+    def add_to_collection(self):
+        self.app.push_screen(AddToCollectionModal(self.context.logged_in, self.record))
          
 
 class BooksPanel(ContextWidget):

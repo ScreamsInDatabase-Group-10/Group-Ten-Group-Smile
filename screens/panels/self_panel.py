@@ -75,13 +75,14 @@ def CollectionContainer(user: UserRecord) -> Container:
 class CollectionEditModal(ContextModal):
     def __init__(
         self,
-        collection: "Collection",
+        collection: "CollectionRecord",
         name: str | None = None,
         id: str | None = None,
         classes: str | None = "collection-edit-modal",
     ) -> None:
         super().__init__(name, id, classes)
         self.collection = collection
+        self.collection.books = self.collection._init_books() # refresh book list
         self.newName = collection.name
 
     def compose(self) -> ComposeResult:
