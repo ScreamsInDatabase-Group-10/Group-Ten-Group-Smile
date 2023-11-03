@@ -96,10 +96,15 @@
 }
 
 #modal-section-sessions {
-    grid-size: 3 6;
+    grid-size: 3 9;
 }
 
 #create-session {
+    width: 100%;
+    column-span: 3;
+}
+
+#create-rating {
     width: 100%;
     column-span: 3;
 }

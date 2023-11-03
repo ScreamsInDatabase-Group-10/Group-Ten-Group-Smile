@@ -167,11 +167,44 @@ class SessionRecord(Record):
         pass
 
 class RatingRecord(Record):
-    def __init__(self, db: Connection, table: str, orm: ORM, user_id: int, rating: int) -> None:
+    def __init__(self, db: Connection, table: str, orm: ORM, user_id: int, rating: int, book_id: int) -> None:
         super().__init__(db, table, orm)
         self.user_id = user_id
+        self.book_id = book_id
         self.rating = rating
 
+    def create(orm: ORM, user_id: int, book_id: int, rating: int):
+        
+        orm.db.execute(
+            "INSERT INTO users_ratings (book_id, user_id, rating) VALUES (%s, %s, %s)",
+            (book_id, user_id, rating),
+        )
+        orm.db.commit()
+        return RatingRecord(
+            orm.db,
+            "users_ratings",
+            orm,
+            user_id,
+            rating,
+            book_id
+        )
+        
+        return None
+
+    def save(self):
+        self.db.execute(
+            "UPDATE " 
+            + self.table
+            + " SET book_id = %s, user_id = %s, rating = %s WHERE user_id == %s && book_id == %s",
+            (
+                self.book_id,
+                self.user_id,
+                self.rating,
+                self.book_id,
+                self.user_id
+            )
+        )
+        self.db.commit()
 
 class BookRecord(Record):
     def __init__(
@@ -389,7 +422,7 @@ class BookRecord(Record):
             for i in list(set(editors.split("|")))
         ] if editors else []
         rating_records = [
-            RatingRecord(db, "users_ratings", orm, int(i.split(":")[0]), int(i.split(":")[1]))
+            RatingRecord(db, "users_ratings", orm, int(i.split(":")[0]), int(i.split(":")[1]), id)
             for i in list(set(ratings.split("|")))
         ] if ratings else []
         return BookRecord(
