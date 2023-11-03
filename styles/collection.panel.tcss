@@ -1,0 +1,42 @@
+#collection-edit-modal-container {
+    width: 75%;
+    height: 75%;
+    padding: 1 3;
+    grid-size: 2 7;
+    grid-gutter: 1 1;
+}
+
+.collection-info {
+    align: center middle;
+    height: 50%;
+}
+
+.collection-edit-modal {
+    align: center middle;
+}
+
+.list-item {
+    grid-size: 2 1;
+}
+
+#edit-title {
+    row-span: 1;
+    column-span: 2;
+    content-align: center middle;
+    padding-top: 1;
+    height: 2;
+}
+
+#label-name {
+    row-span: 1;
+    column-span: 1;
+    content-align: center middle;
+}
+#input-name {
+    row-span: 1;
+    column-span: 1;
+}
+#book-list {
+    row-span: 2;
+    column-span: 2;
+}

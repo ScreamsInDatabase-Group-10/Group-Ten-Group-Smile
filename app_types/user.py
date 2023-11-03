@@ -10,7 +10,7 @@ from util.orm import (
 from datetime import datetime
 import time
 from typing import Optional, Union
-
+from app_types.book import BookRecord
 USER_FMT = """
 SELECT
         users.id as id,
@@ -80,6 +80,17 @@ class UserRecord(Record):
         self.db.execute("DELETE FROM " + self.table + " WHERE id = %s", (self.id,))
         self.db.commit()
 
+    def collections(self) -> list("CollectionRecord"):
+        cursor = self.db.execute(
+            f"SELECT * from collections WHERE id IN (SELECT collection_id from users_collections where user_id = {self.id}) ORDER BY name"
+        )
+        results = [CollectionRecord(self.db, "collections", self.orm, *r) for r in cursor.fetchall()]
+        cursor.close()
+
+        #self.cache["collections"] = results
+        return results
+
+    
     # Create a user, handle ID generation and times automatically
     @classmethod
     def create(
@@ -183,3 +194,112 @@ class UserRecord(Record):
     @property
     def following(self) -> list["UserRecord"]:
         return self.orm.get_records_from_cursor("users", self.db.execute("SELECT * FROM users WHERE id IN (SELECT following_id FROM users_following WHERE user_id = %s)", [self.id]))
+
+class CollectionRecord(Record):
+    def __init__(
+            self,
+            db: Connection,
+            table: str,
+            orm: ORM,
+            id: int,
+            name: str,
+            _book_count: int = None,
+            _user: UserRecord = None
+    ) -> None:
+        self.orm = orm # TODO: put this in the super class
+        self.db = db
+        self.table = table
+        self.id = id
+        self.name = name
+        self.books = self._init_books()
+        self.deleted = False
+        self.cache = {
+            "user": _user
+        }
+
+    def save(self) -> None:
+        self.db.execute(
+            "UPDATE "
+            + self.table
+            + " SET NAME = %(name)s WHERE ID = %(id)s",
+            {"name": self.name, "id": self.id}
+        )
+        # TODO: ewww...
+        self.db.execute(
+            "DELETE FROM books_collections WHERE collection_id = %(id)s",
+            {"id": self.id}
+        )
+        if(len(self.books) != 0):
+            self.db.execute(
+                "INSERT INTO books_collections (book_id, collection_id) VALUES" + ",".join([f"({book.id}, {self.id})" for book in self.books])
+            )
+        self.db.commit()
+
+    def delete(self) -> None:
+        self.db.execute("DELETE FROM books_collections WHERE collection_id = %(id)s", {"id": self.id})
+        self.db.execute("DELETE FROM users_collections WHERE collection_id = %(id)s", {"id": self.id})
+        self.db.execute("DELETE FROM " + self.table +
+                        " WHERE id = %(id)s", {"id": self.id})
+        self.db.commit()
+        self.deleted = True
+
+    def add_book(self, book: BookRecord) -> None:
+        if(book not in self.books):
+            self.books.append(book)
+    
+    def remove_book(self, book: BookRecord) -> bool:
+        if(book in self.books):
+            self.books.remove(book)
+            return True
+        return False
+
+    @property
+    def book_count(self) -> int:
+        return self.db.execute("SELECT COUNT(*) FROM books_collections WHERE collection_id = %(id)s", {"id": self.id}).fetchone()[0]
+
+    @property
+    def page_count(self) -> int:
+        return self.db.execute("SELECT SUM(length) FROM books WHERE id IN (SELECT book_id FROM books_collections WHERE collection_id = %(id)s)", {"id": self.id}).fetchone()[0]
+
+
+    def _init_books(self) -> list[BookRecord]:
+        cursor = self.db.execute(
+            "SELECT * FROM books AS root WHERE id IN (SELECT book_id FROM books_collections WHERE collection_id = %(id)s)",
+            {"id": self.id},
+        )
+        results = [
+            BookRecord(self.db, "audiences", self.orm, *r)
+            for r in cursor.fetchall()
+        ]
+        cursor.close()
+
+        return results
+
+    @property
+    def user(self) -> UserRecord:
+        if self.cache["user"] != None:
+            return self.cache["user"]
+        cursor = self.db.execute(
+            "SELECT user_id FROM users_collections WHERE collection_id = %(id)s",
+            {"id": self.id}
+        )
+        result = UserRecord(self.db, "users", self.orm, *(cursor.fetchone()))
+        cursor.close()
+
+        self.cache["user"] = result
+        return result
+
+    @classmethod
+    def create(cls, orm: ORM, name: str, user: UserRecord ) -> Union["CollectionRecord", None]:
+        next_id = orm.next_available_id("collections")
+        try:
+            orm.db.execute(
+                "INSERT INTO collections (id, name) VALUES (%(next_id)s,%(name)s)", {"next_id": next_id, "name": name}
+                )
+            orm.db.execute(
+                "INSERT INTO users_collections (user_id, collection_id) VALUES (%(user_id)s, %(next_id)s)", {"user_id":user.id, "next_id": next_id})
+            orm.db.commit()
+        except:
+            return None
+
+        return CollectionRecord(orm.db, "collections", orm, next_id, name)
