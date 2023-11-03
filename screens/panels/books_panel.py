@@ -5,6 +5,7 @@ from textual.widgets import Placeholder, Input, Button, Static, ListItem
 from textual.containers import Container, Horizontal, Grid
 from util import ContextWidget, PaginatedTable, ContextModal
 from app_types import BookRecord
+from app_types import RatingRecord
 from datetime import datetime
 from typing_extensions import TypedDict
 from textual import on, work
@@ -229,6 +230,14 @@ class BookActionsModal(ContextModal):
             return True
         except:
             return False
+        
+    def check_rating(self, rating: str) -> bool:
+        try:
+            if 0 <= int(rating) and int(rating) <= 5:
+                return True
+        except ValueError:
+            return False
+        return False
 
     def compose(self) -> ComposeResult:
         with Grid(id="book-actions-divider"):
@@ -274,6 +283,19 @@ class BookActionsModal(ContextModal):
                     id="input-end-page",
                 )
                 yield Button("Create", id="create-session")
+
+                yield Static("New Rating", classes="section-title")
+                yield ListItem(
+                    Static("[b]Rating[/b]"), classes="input-label", id="label-rating"
+                )
+                yield Input(
+                    value="",
+                    placeholder="0-5",
+                    classes="input-field",
+                    id="input-rating",
+                    validators=[Function(self.check_rating, "Rating is not a valid int 0-5")]
+                )
+                yield Button("Rate", id="create-rating")
             yield Button("Exit", id="exit-actions")
     
     @on(Button.Pressed, "#exit-actions")
@@ -311,6 +333,22 @@ class BookActionsModal(ContextModal):
         self.query_one("#input-start-page", expect_type=Input).value = ""
         self.query_one("#input-end-page", expect_type=Input).value = ""
 
+    @on(Button.Pressed, "#create-rating")
+    def create_rating(self):
+        inputs: dict[str, Input] = {
+            "rating": self.query_one("#input-rating", expect_type=Input).value
+        }
+        try:
+            star_rating = inputs["rating"]
+            RatingRecord.create(self.context.orm, self.context.logged_in.id, self.record.id, star_rating)
+            self.app.notify("Success!", severity="information")
+        except:
+            self.app.notify("Failure!", severity="error")
+
+        self.query_one("#input-rating", expect_type=Input).value = ""
+        
+
+         
 
 class BooksPanel(ContextWidget):
     def __init__(
