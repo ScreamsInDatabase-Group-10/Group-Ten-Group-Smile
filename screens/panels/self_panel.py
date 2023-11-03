@@ -41,7 +41,7 @@ class ConnectionsPanel(ContextWidget):
             "First Name", "Last Name", "Email"
         )
         self.query_one("#table-following", expect_type=DataTable).add_columns(
-            "First Name", "Last Name", "Email", "Murder Button"
+            "First Name", "Last Name", "Email", "Unfollow Button"
         )
 
     def watch_followers(self, old, new: list[UserRecord]):
@@ -53,7 +53,7 @@ class ConnectionsPanel(ContextWidget):
         table = self.query_one("#table-following", expect_type=DataTable)
         table.clear()
         table.add_rows(
-            [(i.name_first, i.name_last, i.email, "[b]KILL[/b]") for i in new]
+            [(i.name_first, i.name_last, i.email, "[b]Unfollow[/b]") for i in new]
         )
 
     def compose(self) -> ComposeResult:
