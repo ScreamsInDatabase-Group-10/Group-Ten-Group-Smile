@@ -290,7 +290,16 @@ class CollectionRecord(Record):
         return result
 
     @classmethod
-    def create(cls, orm: ORM, name: str, ) -> Union["CollectionRecord", None]:
-        # TODO: next_id is not safe. Maybe improve?
-        next_id = ORM.next_available_id("collections")
-        raise NotImplementedError
+    def create(cls, orm: ORM, name: str, user: UserRecord ) -> Union["CollectionRecord", None]:
+        next_id = orm.next_available_id("collections")
+        try:
+            orm.db.execute(
+                "INSERT INTO collections (id, name) VALUES (%(next_id)s,%(name)s)", {"next_id": next_id, "name": name}
+                )
+            orm.db.execute(
+                "INSERT INTO users_collections (user_id, collection_id) VALUES (%(user_id)s, %(next_id)s)", {"user_id":user.id, "next_id": next_id})
+            orm.db.commit()
+        except:
+            return None
+
+        return CollectionRecord(orm.db, "collections", orm, next_id, name)
