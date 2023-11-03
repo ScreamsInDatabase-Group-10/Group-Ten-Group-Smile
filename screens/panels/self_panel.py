@@ -1,5 +1,6 @@
 from textual import on
 from textual.app import ComposeResult
+from textual.events import Show
 from textual.widget import Widget
 from textual.widgets import (
     Placeholder,
@@ -65,7 +66,7 @@ class ConnectionsPanel(ContextWidget):
 
     @on(DataTable.CellHighlighted, selector="#table-following")
     def handle_kill_click(self, event: DataTable.CellHighlighted):
-        if event.value == "[b]KILL[/b]":
+        if event.value == "[b]Unfollow[/b]":
             record: UserRecord = self.following[event.coordinate.row]
             self.context.db.execute(
                 "DELETE FROM users_following WHERE user_id = %s AND following_id = %s",
@@ -73,6 +74,11 @@ class ConnectionsPanel(ContextWidget):
             )
             del self.following[event.coordinate.row]
             self.watch_following([], self.following)
+
+    @on(Show)
+    def refresh_following(self):
+        self.load_followers()
+        self.load_following()
 
 
 class CollectionContainer(ContextWidget):
