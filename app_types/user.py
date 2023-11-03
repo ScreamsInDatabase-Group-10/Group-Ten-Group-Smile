@@ -243,6 +243,7 @@ class CollectionRecord(Record):
     def add_book(self, book: BookRecord) -> None:
         if(book not in self.books):
             self.books.append(book)
+        self.books.sort(key=lambda rec: rec.title)
     
     def remove_book(self, book: BookRecord) -> bool:
         if(book in self.books):
@@ -267,6 +268,8 @@ class CollectionRecord(Record):
             for r in cursor.fetchall()
         ]
         cursor.close()
+
+        results.sort(key=lambda rec: rec.title)
 
         return results
 
