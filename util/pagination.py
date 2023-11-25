@@ -208,12 +208,15 @@ class PaginatedTable(ContextWidget):
                     )
                 )
                 if self.pagination["order"][cur_index][1] == "ASC":
-                    self.pagination["order"][cur_index][1] = "DESC"
+                    new = self.pagination["order"][cur_index]
+                    new[1] = "DESC"
+                    del self.pagination["order"][cur_index]
+                    self.pagination["order"].insert(0, new)
                 else:
                     del self.pagination["order"][cur_index]
             else:
-                self.pagination["order"].append(
-                    [self.columns[event.column_index]["sort_by"], "ASC"]
+                self.pagination["order"].insert(
+                    0, [self.columns[event.column_index]["sort_by"], "ASC"]
                 )
             self.update_data()
 

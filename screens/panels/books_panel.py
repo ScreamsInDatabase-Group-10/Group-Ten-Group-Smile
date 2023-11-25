@@ -555,8 +555,8 @@ class BooksPanel(ContextWidget):
                     "limit": 25,
                     "offset": 0,
                     "order": [
-                        ["release_dt", "ASC"],
                         ["title", "ASC"],
+                        ["release_dt", "ASC"],
                     ],
                 },
                 cursor_type="row",
