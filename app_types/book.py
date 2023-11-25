@@ -13,7 +13,7 @@ from typing import Literal, Optional
 # Big query strings for searching
 
 BOOK_FMT = """
-SELECT * FROM view_books_expanded
+SELECT * FROM view_books
     {conditions}
 	{order}
     {offset}
@@ -21,7 +21,7 @@ SELECT * FROM view_books_expanded
 """
 
 BOOK_FMT_COUNT = """
-SELECT COUNT(id) FROM view_books_expanded {conditions}
+SELECT COUNT(id) FROM view_books {conditions}
 """
 
 
@@ -338,7 +338,7 @@ class BookRecord(Record):
             )
             result = cursor.fetchone()[0]
             cursor.close()
-            return round(result if result else 0, 2)
+            return round(result, 2) if result else -1
 
     # Build from search results
 

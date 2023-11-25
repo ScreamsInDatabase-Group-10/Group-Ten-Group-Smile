@@ -544,7 +544,7 @@ class BooksPanel(ContextWidget):
                     {
                         "key": "avg_rating",
                         "name": "Average Rating",
-                        "render": lambda rating: str(rating),
+                        "render": lambda rating: str(rating) if rating >= 0 else "Not Rated",
                         "sort_by": "avg_rating",
                     },
                 ],
