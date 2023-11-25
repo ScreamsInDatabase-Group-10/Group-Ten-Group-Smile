@@ -219,10 +219,10 @@ class UsersPanel(ContextWidget):
         )
 
     def search_update(self, values: Union[SearchFields, None]):
-        self.query_one("#user-search-main", expect_type=Input).value = values.get(
-            "name_first", ""
-        )
-        self.fields = values
+        self.query_one("#user-search-main", expect_type=Input).value = (
+            values if values else dict()
+        ).get("name_first", "")
+        self.fields = values if values else dict()
         transformed_values = {}
         for k, v in self.fields.items():
             if k == "id":
