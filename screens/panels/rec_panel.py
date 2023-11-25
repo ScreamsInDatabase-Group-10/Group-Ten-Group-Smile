@@ -30,7 +30,19 @@ class RecommendationPanel(ContextWidget):
 
     @work(name="data.last-90", thread=True)
     def get_data_last_90(self):
-        data = self.context.db.execute("SELECT * FROM view_rec_last_90")
+        data = self.context.db.execute(
+            "SELECT * FROM view_rec_90 ORDER BY count DESC LIMIT 20"
+        )
+        self.data = [
+            BookRecord._from_search(self.context.db, "books", self.context.orm, *i)
+            for i in data
+        ]
+
+    @work(name="data.this-month", thread=True)
+    def get_data_this_month(self):
+        data = self.context.db.execute(
+            "SELECT * FROM view_rec_this_month ORDER BY avg_rating DESC LIMIT 5"
+        )
         self.data = [
             BookRecord._from_search(self.context.db, "books", self.context.orm, *i)
             for i in data
@@ -117,5 +129,7 @@ class RecommendationPanel(ContextWidget):
         match self.mode:
             case "last-90":
                 self.get_data_last_90()
+            case "this-month":
+                self.get_data_this_month()
             case _:
                 self.data = []
