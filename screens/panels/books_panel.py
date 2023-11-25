@@ -218,47 +218,59 @@ class AdvancedSearchModal(ContextModal):
             else:
                 self.fields[event.input.name] = event.value
 
+
 class AddCollection(Static):
     def __init__(
-                self,
-                collection: CollectionRecord,
-                book: BookRecord,
-                name: str | None = None,
-                id: str | None = None,
-                classes: str | None = None,
-                disabled: bool = False,
-
-        ):
-            super().__init__(name=name, id=id, classes=classes, disabled=disabled)
-            self.collection = collection
-            self.book = book
+        self,
+        collection: CollectionRecord,
+        book: BookRecord,
+        name: str | None = None,
+        id: str | None = None,
+        classes: str | None = None,
+        disabled: bool = False,
+    ):
+        super().__init__(name=name, id=id, classes=classes, disabled=disabled)
+        self.collection = collection
+        self.book = book
 
     def compose(self) -> ComposeResult:
         yield Static(self.collection.name, id="collection-name")
         yield Button("Add", id="collection-button")
 
     def collection_update(self, collection: CollectionRecord | None) -> None:
-        if collection == None: return
+        if collection == None:
+            return
         self.collection = collection
         self.query_one("#collection-name", expect_type=Static).update(
             self.collection.name
-            )
+        )
 
     @on(Button.Pressed, "#collection-button")
     def on_add(self):
         self.collection.add_book(self.book)
         self.collection.save()
 
+
 class AddToCollectionModal(ContextModal):
-    def __init__(self, user: UserRecord, book: BookRecord, name: str | None = None, id: str | None = None, classes: str | None = "add-to-collection-modal") -> None:
+    def __init__(
+        self,
+        user: UserRecord,
+        book: BookRecord,
+        name: str | None = None,
+        id: str | None = None,
+        classes: str | None = "add-to-collection-modal",
+    ) -> None:
         super().__init__(name, id, classes)
         self.user = user
         self.book = book
-    
+
     def compose(self) -> ComposeResult:
         with Container(id="add-to-collection-modal-container"):
             yield ListView(
-                *[ListItem(AddCollection(c, self.book)) for c in self.user.collections()]
+                *[
+                    ListItem(AddCollection(c, self.book))
+                    for c in self.user.collections()
+                ]
             )
             yield Button("Exit", id="collection-exit-button")
 
@@ -266,8 +278,15 @@ class AddToCollectionModal(ContextModal):
     def on_exit(self):
         self.dismiss(None)
 
+
 class BookActionsModal(ContextModal):
-    def __init__(self, record: BookRecord, name: str | None = None, id: str | None = None, classes: str | None = None) -> None:
+    def __init__(
+        self,
+        record: BookRecord,
+        name: str | None = None,
+        id: str | None = None,
+        classes: str | None = None,
+    ) -> None:
         super().__init__(name, id, classes)
         self.record = record
 
@@ -279,7 +298,7 @@ class BookActionsModal(ContextModal):
             return True
         except:
             return False
-        
+
     def check_rating(self, rating: str) -> bool:
         try:
             if 0 <= int(rating) and int(rating) <= 5:
@@ -290,31 +309,39 @@ class BookActionsModal(ContextModal):
 
     def compose(self) -> ComposeResult:
         with Grid(id="book-actions-divider"):
-            yield Static(f"[b]Book Actions:[/b] [i]{self.record.title}[/i]", id="actions-title")
+            yield Static(
+                f"[b]Book Actions:[/b] [i]{self.record.title}[/i]", id="actions-title"
+            )
             with Grid(id="modal-section-sessions", classes="modal-section"):
                 yield Static("New Read Session", classes="section-title")
                 yield ListItem(
-                    Static("[b]Start Time[/b]"), classes="input-label", id="label-start-time"
+                    Static("[b]Start Time[/b]"),
+                    classes="input-label",
+                    id="label-start-time",
                 )
                 yield Input(
                     value="",
                     placeholder="Start Time",
                     classes="input-field",
                     id="input-start-time",
-                    validators=[Function(self.check_date, "Value is an invalid date")]
+                    validators=[Function(self.check_date, "Value is an invalid date")],
                 )
                 yield ListItem(
-                    Static("[b]End Time[/b]"), classes="input-label", id="label-end-time"
+                    Static("[b]End Time[/b]"),
+                    classes="input-label",
+                    id="label-end-time",
                 )
                 yield Input(
                     value="",
                     placeholder="End Time",
                     classes="input-field",
                     id="input-end-time",
-                    validators=[Function(self.check_date, "Value is an invalid date")]
+                    validators=[Function(self.check_date, "Value is an invalid date")],
                 )
                 yield ListItem(
-                    Static("[b]Start Page[/b]"), classes="input-label", id="label-start-page"
+                    Static("[b]Start Page[/b]"),
+                    classes="input-label",
+                    id="label-start-page",
                 )
                 yield Input(
                     value="",
@@ -323,7 +350,9 @@ class BookActionsModal(ContextModal):
                     id="input-start-page",
                 )
                 yield ListItem(
-                    Static("[b]End Time[/b]"), classes="input-label", id="label-end-page"
+                    Static("[b]End Time[/b]"),
+                    classes="input-label",
+                    id="label-end-page",
                 )
                 yield Input(
                     value="",
@@ -342,12 +371,14 @@ class BookActionsModal(ContextModal):
                     placeholder="0-5",
                     classes="input-field",
                     id="input-rating",
-                    validators=[Function(self.check_rating, "Rating is not a valid int 0-5")]
+                    validators=[
+                        Function(self.check_rating, "Rating is not a valid int 0-5")
+                    ],
                 )
                 yield Button("Rate", id="create-rating")
 
             yield Button("Exit", id="exit-actions")
-    
+
     @on(Button.Pressed, "#exit-actions")
     def exit_actions(self):
         self.dismiss()
@@ -358,22 +389,33 @@ class BookActionsModal(ContextModal):
             "start_time": self.query_one("#input-start-time", expect_type=Input),
             "end_time": self.query_one("#input-end-time", expect_type=Input),
             "start_page": self.query_one("#input-start-page", expect_type=Input),
-            "end_page": self.query_one("#input-end-page", expect_type=Input)
+            "end_page": self.query_one("#input-end-page", expect_type=Input),
         }
-        if not all([(i.validate(i.value) == None or i.validate(i.value).is_valid) and len(i.value) > 0 for i in inputs.values()]):
+        if not all(
+            [
+                (i.validate(i.value) == None or i.validate(i.value).is_valid)
+                and len(i.value) > 0
+                for i in inputs.values()
+            ]
+        ):
             return
-        
+
         try:
-            values = {k:v.value for k, v in inputs.items()}
-            self.context.db.execute("INSERT INTO users_sessions (session_id, book_id, user_id, start_datetime, end_datetime, start_page, end_page) VALUES (%s, %s, %s, %s, %s, %s, %s)", [
-                self.context.orm.next_available_id("users_sessions", col="session_id"),
-                self.record.id,
-                self.context.logged_in.id,
-                parse(values["start_time"]),
-                parse(values["end_time"]),
-                int(values["start_page"]),
-                int(values["end_page"])
-            ])
+            values = {k: v.value for k, v in inputs.items()}
+            self.context.db.execute(
+                "INSERT INTO users_sessions (session_id, book_id, user_id, start_datetime, end_datetime, start_page, end_page) VALUES (%s, %s, %s, %s, %s, %s, %s)",
+                [
+                    self.context.orm.next_available_id(
+                        "users_sessions", col="session_id"
+                    ),
+                    self.record.id,
+                    self.context.logged_in.id,
+                    parse(values["start_time"]),
+                    parse(values["end_time"]),
+                    int(values["start_page"]),
+                    int(values["end_page"]),
+                ],
+            )
             self.context.db.commit()
             self.app.notify("Success!", severity="information")
         except:
@@ -390,7 +432,9 @@ class BookActionsModal(ContextModal):
         }
         try:
             star_rating = inputs["rating"]
-            RatingRecord.create(self.context.orm, self.context.logged_in.id, self.record.id, star_rating)
+            RatingRecord.create(
+                self.context.orm, self.context.logged_in.id, self.record.id, star_rating
+            )
             self.app.notify("Success!", severity="information")
         except:
             self.app.notify("Failure!", severity="error")
@@ -400,7 +444,7 @@ class BookActionsModal(ContextModal):
     @on(Button.Pressed, "#collection-button")
     def add_to_collection(self):
         self.app.push_screen(AddToCollectionModal(self.context.logged_in, self.record))
-         
+
 
 class BooksPanel(ContextWidget):
     def __init__(
@@ -428,12 +472,7 @@ class BooksPanel(ContextWidget):
             PaginatedTable(
                 BookRecord,
                 [
-                    {
-                        "key": "id",
-                        "name": "Book Id",
-                        "render": lambda id: str(id),
-                        "sort_by": "id",
-                    },
+                    {"key": "id", "name": "Book Id", "render": lambda id: str(id)},
                     {
                         "key": "title",
                         "name": "Title",
@@ -449,15 +488,18 @@ class BooksPanel(ContextWidget):
                         "key": "length",
                         "name": "Number of Pages",
                         "render": lambda length: str(length),
-                        "sort_by": "length",
                     },
                     {
                         "key": "edition",
                         "name": "Edition Name",
-                        "render": lambda edition: edition
+                        "render": lambda edition: (
+                            edition if len(edition) <= 50 else edition[:47] + "..."
+                        )
+                        .replace("<i>", "[italic]")
+                        .replace("<\\i>", "[/italic]")
+                        .replace("\\", "")
                         if edition
                         else "Not Specified",
-                        "sort_by": "edition",
                     },
                     {
                         "key": "release_dt",
@@ -465,23 +507,16 @@ class BooksPanel(ContextWidget):
                         "render": lambda release: release.strftime("%b %d, %Y"),
                         "sort_by": "release_dt",
                     },
-                    {
-                        "key": "isbn",
-                        "name": "ISBN",
-                        "render": lambda isbn: str(isbn),
-                        "sort_by": "isbn",
-                    },
+                    {"key": "isbn", "name": "ISBN", "render": lambda isbn: str(isbn)},
                     {
                         "key": "authors",
                         "name": "Authors",
                         "render": lambda authors: ", ".join([a.name for a in authors]),
-                        "sort_by": "authors_names_only",
                     },
                     {
                         "key": "editors",
                         "name": "Editors",
                         "render": lambda editors: ", ".join([e.name for e in editors]),
-                        "sort_by": "editors_names_only",
                     },
                     {
                         "key": "publishers",
@@ -505,12 +540,11 @@ class BooksPanel(ContextWidget):
                         "render": lambda audiences: ", ".join(
                             list(set([a.name for a in audiences]))
                         ),
-                        "sort_by": "audiences_names_only",
                     },
                     {
                         "key": "avg_rating",
                         "name": "Average Rating",
-                        "render": lambda rating: str(rating),
+                        "render": lambda rating: str(rating) if rating >= 0 else "Not Rated",
                         "sort_by": "avg_rating",
                     },
                 ],
@@ -521,11 +555,11 @@ class BooksPanel(ContextWidget):
                     "limit": 25,
                     "offset": 0,
                     "order": [
-                        ["release_dt", "ASC"],
                         ["title", "ASC"],
+                        ["release_dt", "ASC"],
                     ],
                 },
-                cursor_type="row"
+                cursor_type="row",
             ),
             classes="panel books",
             id="app-panel-books",
