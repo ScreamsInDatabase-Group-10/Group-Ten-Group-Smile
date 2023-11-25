@@ -1,0 +1,12 @@
+.rec-control {
+    width: 1fr;
+    height: 1fr;
+}
+
+.rec-control.active {
+    background: dodgerblue;
+}
+
+#data-display {
+    height: 19fr;
+}

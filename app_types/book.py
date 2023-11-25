@@ -1,4 +1,4 @@
-from psycopg import Connection
+from psycopg import Connection, Cursor
 from util.orm import (
     Record,
     ORM,
