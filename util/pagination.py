@@ -47,7 +47,7 @@ class PaginatedTable(ContextWidget):
         initial_pagination: PaginationParams = {"offset": 0, "limit": 25, "order": []},
         initial_params: dict[str, Any] = {},
         initial_total: int = 0,
-        cursor_type: str = "none"
+        cursor_type: str = "none",
     ) -> None:
         """Paginated Table Class
 
@@ -139,7 +139,11 @@ class PaginatedTable(ContextWidget):
 
     def compose(self) -> ComposeResult:
         yield Container(
-            DataTable(classes="paginated-table", show_cursor=True, cursor_type=self.cursor_mode),
+            DataTable(
+                classes="paginated-table",
+                show_cursor=True,
+                cursor_type=self.cursor_mode,
+            ),
             Grid(
                 Button("<- Previous", classes="pagination-control-item previous"),
                 Static(self.page_status, classes="pagination-control-item status"),
@@ -208,13 +212,18 @@ class PaginatedTable(ContextWidget):
                 else:
                     del self.pagination["order"][cur_index]
             else:
-                self.pagination["order"].append([self.columns[event.column_index]["sort_by"], "ASC"])
+                self.pagination["order"].append(
+                    [self.columns[event.column_index]["sort_by"], "ASC"]
+                )
             self.update_data()
 
     def get_column_sorts(self) -> list[str]:
         new_columns = []
         for c in range(len(self.columns)):
-            if "sort_by" in self.columns[c].keys():
+            if (
+                "sort_by" in self.columns[c].keys()
+                and self.columns[c]["sort_by"] != None
+            ):
                 if [self.columns[c]["sort_by"], "ASC"] in self.pagination["order"]:
                     new_columns.append("▲ " + self.columns[c]["name"])
                 elif [self.columns[c]["sort_by"], "DESC"] in self.pagination["order"]:
@@ -224,7 +233,7 @@ class PaginatedTable(ContextWidget):
             else:
                 new_columns.append(self.columns[c]["name"])
         return new_columns
-    
+
     def search(self, params: dict[str, Any]):
         """Update search params
 
@@ -266,5 +275,3 @@ class PaginatedTable(ContextWidget):
         column = self.columns[event.cursor_column]
         key = column["key"]
         return self.post_message(self.CursorEvent([getattr(d, key) for d in self.data]))
-                    
-            
