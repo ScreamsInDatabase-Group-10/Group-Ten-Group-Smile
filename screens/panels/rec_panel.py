@@ -48,6 +48,54 @@ class RecommendationPanel(ContextWidget):
             for i in data
         ]
 
+    @work(name="data.for-you", thread=True)
+    def get_data_for_you(self):
+        data = self.context.db.execute(
+            """
+                SELECT * FROM view_books 
+                WHERE avg_rating IS NOT NULL AND id IN (
+                    SELECT book_id FROM books_genres
+                    WHERE genre_id IN (
+                        SELECT DISTINCT genre_id FROM books_genres
+                        WHERE book_id IN (
+                            SELECT book_id FROM users_ratings
+                            WHERE user_id = %s ORDER BY rating DESC LIMIT 100
+                        )
+                    )
+                )
+                ORDER BY avg_rating DESC
+                LIMIT 20
+            """,
+            [self.context.logged_in.id],
+        )
+        self.data = [
+            BookRecord._from_search(self.context.db, "books", self.context.orm, *i)
+            for i in data
+        ]
+
+    @work(name="data.followers-read", thread=True)
+    def get_data_followers_read(self):
+        data = self.context.db.execute(
+            """
+            SELECT * FROM view_books WHERE avg_rating IS NOT NULL AND id in (SELECT books_collections.book_id FROM books_collections 
+                WHERE books_collections.collection_id IN (
+                    SELECT users_collections.collection_id FROM users_collections
+                    WHERE users_collections.user_id IN (
+                        SELECT users_following.user_id FROM users_following 
+                        WHERE users_following.following_id = %s
+                    )
+                ) 
+                GROUP BY books_collections.book_id)
+            ORDER BY avg_rating DESC
+            LIMIT 20
+        """,
+            [self.context.logged_in.id],
+        )
+        self.data = [
+            BookRecord._from_search(self.context.db, "books", self.context.orm, *i)
+            for i in data
+        ]
+
     def compose(self) -> ComposeResult:
         yield Container(
             Horizontal(
@@ -131,5 +179,7 @@ class RecommendationPanel(ContextWidget):
                 self.get_data_last_90()
             case "this-month":
                 self.get_data_this_month()
-            case _:
-                self.data = []
+            case "followers-read":
+                self.get_data_followers_read()
+            case "for-you":
+                self.get_data_for_you()
