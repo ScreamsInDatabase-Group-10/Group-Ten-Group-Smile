@@ -12,6 +12,7 @@ from textual.widgets import (
     ListItem,
     Button,
     Input,
+    Rule
 )
 from textual.containers import Container, Grid
 from textual import work, on
@@ -53,7 +54,8 @@ class ConnectionsPanel(ContextWidget):
         table = self.query_one("#table-following", expect_type=DataTable)
         table.clear()
         table.add_rows(
-            [(i.name_first, i.name_last, i.email, "[b]Unfollow[/b]") for i in new]
+            [(i.name_first, i.name_last, i.email, "[b]Unfollow[/b]")
+             for i in new]
         )
 
     def compose(self) -> ComposeResult:
@@ -139,7 +141,8 @@ class CollectionEditModal(ContextModal):
             )
             yield ListView(
                 *[
-                    ListItem(CollectionBook(b, self.collection), classes="list-item")
+                    ListItem(CollectionBook(b, self.collection),
+                             classes="list-item")
                     for b in self.collection.books
                 ],
                 id="book-list",
@@ -197,8 +200,10 @@ class CollectionBook(Static):
             self.removed = True
             self.collection.remove_book(self.book)
         else:
-            self.query_one("#title", expect_type=Static).update(self.book.title)
-            self.query_one("#toggle-button", expect_type=Button).label = "Remove"
+            self.query_one("#title", expect_type=Static).update(
+                self.book.title)
+            self.query_one("#toggle-button",
+                           expect_type=Button).label = "Remove"
             self.collection.add_book(self.book)
             self.removed = False
 
@@ -238,6 +243,21 @@ class Collection(Static):
 
 
 class SelfPanel(ContextWidget):
+    def on_mount(self):
+        table = self.query_one("#top-ten-data", expect_type=DataTable)
+        table.add_columns("Title", "Authors", "Average Rating")
+        self.get_table_data()
+
+    @work(thread=True)
+    def get_table_data(self):
+        data = [BookRecord._from_search(self.context.db, "books", self.context.orm, *record) for record in self.context.db.execute(
+            "SELECT * FROM view_books WHERE id IN (SELECT book_id FROM users_ratings WHERE user_id = %s) ORDER BY avg_rating DESC LIMIT 10", [self.context.logged_in.id])]
+
+        table = self.query_one("#top-ten-data", expect_type=DataTable)
+        table.clear()
+        table.add_rows([[i.title if len(i.title) <= 50 else i.title[:47] + "...", ", ".join([x.name for x in i.authors]), str(
+            i.avg_rating if i.avg_rating else 0)] for i in data])
+
     def compose(self) -> ComposeResult:
         user = self.context.logged_in
         yield Container(
@@ -255,6 +275,11 @@ class SelfPanel(ContextWidget):
             ),
             CollectionContainer(id="collections-section"),
             ConnectionsPanel(id="connections-section"),
+            Container(
+                Rule(),
+                DataTable(id="top-ten-data"),
+                id="top-ten"
+            ),
             classes="panel self",
             id="app-panel-self",
         )

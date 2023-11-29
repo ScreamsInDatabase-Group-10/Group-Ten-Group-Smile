@@ -5,7 +5,7 @@
 }
 
 #user-info-section {
-    column-span: 4;
+    column-span: 2;
     content-align: center middle;
 }
 
@@ -14,5 +14,13 @@
 }
 
 #connections-section {
-    row-span: 4;
+    row-span: 2;
+}
+
+#top-ten {
+    row-span: 2;
+}
+
+#top-ten-data {
+    height: 1fr;
 }
