@@ -247,6 +247,32 @@ class SelfPanel(ContextWidget):
         table = self.query_one("#top-ten-data", expect_type=DataTable)
         table.add_columns("Title", "Authors", "Average Rating")
         self.get_table_data()
+        self.update_user_data()
+        
+    @work(thread=True)
+    async def update_user_data(self):
+        user = self.context.logged_in
+        email = user.email
+        name = user.name_first + " " + user.name_last
+        created = user.creation_dt
+        
+        count_collections = self.context.db.execute("SELECT COUNT(collection_id) FROM users_collections WHERE user_id = %s", [user.id]).fetchone()[0]
+        count_following = self.context.db.execute("SELECT COUNT(following_id) FROM users_following WHERE user_id = %s", [user.id]).fetchone()[0]
+        count_followers = self.context.db.execute("SELECT COUNT(user_id) FROM users_following WHERE following_id = %s", [user.id]).fetchone()[0]
+        
+        await self.query_one("#user-info-section", expect_type=Static).remove()
+        await self.query_one("#app-panel-self", expect_type=Container).mount(Static(
+                f"""Name: {name}
+Email: {email}
+Created On: {user.creation_dt.strftime("%b %d %Y")}
+
+Collections: {count_collections}
+Following: {count_following}
+Followers: {count_followers}""",
+                id="user-info-section",
+                classes="panel-sections user-info",
+            ), before="#collections-section")
+        
 
     @work(thread=True)
     def get_table_data(self):
@@ -259,17 +285,15 @@ class SelfPanel(ContextWidget):
             i.avg_rating if i.avg_rating else 0)] for i in data])
 
     def compose(self) -> ComposeResult:
-        user = self.context.logged_in
         yield Container(
             Static(
-                "Email: "
-                + user.email
-                + " Name: "
-                + user.name_first
-                + " "
-                + user.name_last
-                + "\nDate Created: "
-                + user.creation_dt.strftime("%b %d %Y"),
+                """Name: 
+Email: 
+Created On: 
+
+Collections: 
+Following: 
+Followers: """,
                 id="user-info-section",
                 classes="panel-sections user-info",
             ),
