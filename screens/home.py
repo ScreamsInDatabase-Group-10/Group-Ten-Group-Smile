@@ -6,11 +6,10 @@ from events.logout import LogoutMessage
 from events.login import LoginMessage
 from .panels import *
 
+
 class HomeScreen(ContextScreen):
     # Bind CTRL + L to logout
-    BINDINGS = [
-        Binding("ctrl+l", "logout", "Log Out")
-    ]
+    BINDINGS = [Binding("ctrl+l", "logout", "Log Out")]
 
     # Basic layout for the time being
     def compose(self) -> ComposeResult:
@@ -23,6 +22,8 @@ class HomeScreen(ContextScreen):
                 yield BooksPanel()
             with TabPane("Users", id="users"):
                 yield UsersPanel()
+            with TabPane("Recommendations", id="rec"):
+                yield RecommendationPanel()
 
     # Listens for logout
     def action_logout(self):

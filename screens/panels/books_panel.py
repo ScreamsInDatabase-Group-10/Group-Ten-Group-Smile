@@ -472,12 +472,7 @@ class BooksPanel(ContextWidget):
             PaginatedTable(
                 BookRecord,
                 [
-                    {
-                        "key": "id",
-                        "name": "Book Id",
-                        "render": lambda id: str(id),
-                        "sort_by": "id",
-                    },
+                    {"key": "id", "name": "Book Id", "render": lambda id: str(id)},
                     {
                         "key": "title",
                         "name": "Title",
@@ -493,15 +488,18 @@ class BooksPanel(ContextWidget):
                         "key": "length",
                         "name": "Number of Pages",
                         "render": lambda length: str(length),
-                        "sort_by": "length",
                     },
                     {
                         "key": "edition",
                         "name": "Edition Name",
-                        "render": lambda edition: edition
+                        "render": lambda edition: (
+                            edition if len(edition) <= 50 else edition[:47] + "..."
+                        )
+                        .replace("<i>", "[italic]")
+                        .replace("<\\i>", "[/italic]")
+                        .replace("\\", "")
                         if edition
                         else "Not Specified",
-                        "sort_by": "edition",
                     },
                     {
                         "key": "release_dt",
@@ -509,23 +507,16 @@ class BooksPanel(ContextWidget):
                         "render": lambda release: release.strftime("%b %d, %Y"),
                         "sort_by": "release_dt",
                     },
-                    {
-                        "key": "isbn",
-                        "name": "ISBN",
-                        "render": lambda isbn: str(isbn),
-                        "sort_by": "isbn",
-                    },
+                    {"key": "isbn", "name": "ISBN", "render": lambda isbn: str(isbn)},
                     {
                         "key": "authors",
                         "name": "Authors",
                         "render": lambda authors: ", ".join([a.name for a in authors]),
-                        "sort_by": "authors_names_only",
                     },
                     {
                         "key": "editors",
                         "name": "Editors",
                         "render": lambda editors: ", ".join([e.name for e in editors]),
-                        "sort_by": "editors_names_only",
                     },
                     {
                         "key": "publishers",
@@ -549,12 +540,11 @@ class BooksPanel(ContextWidget):
                         "render": lambda audiences: ", ".join(
                             list(set([a.name for a in audiences]))
                         ),
-                        "sort_by": "audiences_names_only",
                     },
                     {
                         "key": "avg_rating",
                         "name": "Average Rating",
-                        "render": lambda rating: str(rating),
+                        "render": lambda rating: str(rating) if rating >= 0 else "Not Rated",
                         "sort_by": "avg_rating",
                     },
                 ],
@@ -566,6 +556,7 @@ class BooksPanel(ContextWidget):
                     "offset": 0,
                     "order": [
                         ["title", "ASC"],
+                        ["release_dt", "ASC"],
                     ],
                 },
                 cursor_type="row",
