@@ -115,6 +115,7 @@ class RecommendationPanel(ContextWidget):
                     name="this-month",
                 ),
                 Button(label="For You", classes="rec-control for-you", name="for-you"),
+                id="rec-buttons",
             ),
             DataTable(id="data-display"),
             classes="panel rec",
