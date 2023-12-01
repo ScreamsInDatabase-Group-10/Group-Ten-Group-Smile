@@ -336,5 +336,6 @@ Followers: """,
             id="app-panel-self",
         )
 
-    # @on(Button.Pressed, "create-button")
-    # def on_create_collection():
+    @on(Show)
+    def refresh_data(self):
+        self.update_user_data()
