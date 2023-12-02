@@ -292,7 +292,12 @@ Following: {count_following}""",
         data = [
             [record[0][0], record[0][1], record[0][2]]
             for record in self.context.db.execute(
-                "SELECT (title, authors, rating) FROM view_books_vid LEFT JOIN users_ratings ON users_ratings.book_id = view_books_vid.id WHERE users_ratings.user_id = %s ORDER BY rating DESC LIMIT 10",
+                """
+                    SELECT (title, authors, rating) FROM view_books_vid 
+                        LEFT JOIN users_ratings ON users_ratings.book_id = view_books_vid.id 
+                        WHERE users_ratings.user_id = %s 
+                        ORDER BY rating DESC LIMIT 10
+                """,
                 [self.context.logged_in.id],
             )
         ]
