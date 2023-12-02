@@ -278,10 +278,9 @@ class SelfPanel(ContextWidget):
                 f"""Name: {name}
 Email: {email}
 Created On: {user.creation_dt.strftime("%b %d %Y")}
-
 Collections: {count_collections}
-Following: {count_following}
-Followers: {count_followers}""",
+Followers: {count_followers}
+Following: {count_following}""",
                 id="user-info-section",
                 classes="panel-sections user-info",
             ),
@@ -317,10 +316,9 @@ Followers: {count_followers}""",
                 """Name: 
 Email: 
 Created On: 
-
 Collections: 
-Following: 
-Followers: """,
+Followers: 
+Following: """,
                 id="user-info-section",
                 classes="panel-sections user-info",
             ),
