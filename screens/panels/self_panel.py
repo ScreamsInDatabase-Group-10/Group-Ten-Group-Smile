@@ -342,3 +342,4 @@ Following: """,
     @on(Show)
     def refresh_data(self):
         self.update_user_data()
+        self.get_table_data()
