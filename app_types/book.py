@@ -13,7 +13,7 @@ from typing import Literal, Optional
 # Big query strings for searching
 
 BOOK_FMT = """
-SELECT * FROM view_books
+SELECT * FROM view_books_vid
     {conditions}
 	{order}
     {offset}
@@ -21,7 +21,7 @@ SELECT * FROM view_books
 """
 
 BOOK_FMT_COUNT = """
-SELECT COUNT(id) FROM view_books {conditions}
+SELECT COUNT(id) FROM view_books_vid {conditions}
 """
 
 

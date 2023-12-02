@@ -31,7 +31,7 @@ class RecommendationPanel(ContextWidget):
     @work(name="data.last-90", thread=True)
     def get_data_last_90(self):
         data = self.context.db.execute(
-            "SELECT * FROM view_rec_90 ORDER BY count DESC LIMIT 20"
+            "SELECT * FROM v90_vid ORDER BY count DESC LIMIT 20"
         )
         self.data = [
             BookRecord._from_search(self.context.db, "books", self.context.orm, *i)
@@ -41,7 +41,7 @@ class RecommendationPanel(ContextWidget):
     @work(name="data.this-month", thread=True)
     def get_data_this_month(self):
         data = self.context.db.execute(
-            "SELECT * FROM view_rec_this_month ORDER BY avg_rating DESC LIMIT 5"
+            "SELECT * FROM vmonth_vid ORDER BY avg_rating DESC LIMIT 5"
         )
         self.data = [
             BookRecord._from_search(self.context.db, "books", self.context.orm, *i)
@@ -52,7 +52,7 @@ class RecommendationPanel(ContextWidget):
     def get_data_for_you(self):
         data = self.context.db.execute(
             """
-                SELECT * FROM view_books 
+                SELECT * FROM view_books_vid 
                 WHERE avg_rating IS NOT NULL AND id IN (
                     SELECT book_id FROM books_genres
                     WHERE genre_id IN (
@@ -77,7 +77,7 @@ class RecommendationPanel(ContextWidget):
     def get_data_followers_read(self):
         data = self.context.db.execute(
             """
-            SELECT * FROM view_books WHERE avg_rating IS NOT NULL AND id in (SELECT books_collections.book_id FROM books_collections 
+            SELECT * FROM view_books_vid WHERE avg_rating IS NOT NULL AND id in (SELECT books_collections.book_id FROM books_collections 
                 WHERE books_collections.collection_id IN (
                     SELECT users_collections.collection_id FROM users_collections
                     WHERE users_collections.user_id IN (

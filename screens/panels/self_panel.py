@@ -293,7 +293,7 @@ Followers: {count_followers}""",
         data = [
             BookRecord._from_search(self.context.db, "books", self.context.orm, *record)
             for record in self.context.db.execute(
-                "SELECT * FROM view_books WHERE id IN (SELECT book_id FROM users_ratings WHERE user_id = %s) ORDER BY avg_rating DESC LIMIT 10",
+                "SELECT * FROM view_books_vid WHERE id IN (SELECT book_id FROM users_ratings WHERE user_id = %s) ORDER BY avg_rating DESC LIMIT 10",
                 [self.context.logged_in.id],
             )
         ]
