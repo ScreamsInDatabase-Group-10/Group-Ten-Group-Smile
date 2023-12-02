@@ -248,7 +248,7 @@ class Collection(Static):
 class SelfPanel(ContextWidget):
     def on_mount(self):
         table = self.query_one("#top-ten-data", expect_type=DataTable)
-        table.add_columns("Title", "Authors", "Average Rating")
+        table.add_columns("Title", "Authors", "Rating")
         self.get_table_data()
         self.update_user_data()
 
@@ -290,9 +290,9 @@ Following: {count_following}""",
     @work(thread=True)
     def get_table_data(self):
         data = [
-            BookRecord._from_search(self.context.db, "books", self.context.orm, *record)
+            [record[0][0], record[0][1], record[0][2]]
             for record in self.context.db.execute(
-                "SELECT * FROM view_books_vid WHERE id IN (SELECT book_id FROM users_ratings WHERE user_id = %s) ORDER BY avg_rating DESC LIMIT 10",
+                "SELECT (title, authors, rating) FROM view_books_vid LEFT JOIN users_ratings ON users_ratings.book_id = view_books_vid.id WHERE users_ratings.user_id = %s ORDER BY rating DESC LIMIT 10",
                 [self.context.logged_in.id],
             )
         ]
@@ -302,9 +302,9 @@ Following: {count_following}""",
         table.add_rows(
             [
                 [
-                    i.title if len(i.title) <= 50 else i.title[:47] + "...",
-                    ", ".join([x.name for x in i.authors]),
-                    str(i.avg_rating if i.avg_rating else 0),
+                    i[0] if len(i[0]) <= 50 else i[0][:47] + "...",
+                    ", ".join([x.split(":")[1] for x in i[1].split("|")]),
+                    str(i[2] if i[2] else 0),
                 ]
                 for i in data
             ]
@@ -326,7 +326,7 @@ Following: """,
             ConnectionsPanel(id="connections-section"),
             Container(
                 Rule(),
-                Static("Highest average rated books"),
+                Static("10 highest rated books"),
                 DataTable(id="top-ten-data"),
                 id="top-ten",
             ),
